@@ -37,8 +37,8 @@ const celebrationIcons  = document.getElementById('celebration-icons');
 
 // ── Grid Config ──
 const CELL_SIZE = 48;
-const GRID_COLS = 12;
-const GRID_ROWS = 10;
+const GRID_COLS = 20;
+const GRID_ROWS = 12;
 
 // ── Get all factor pairs for a number ──
 function getFactorPairs(n) {
@@ -372,9 +372,7 @@ function confirmGrid(rect) {
   discoveredList.appendChild(item);
 
  flashHint(`Nice! ${rows} × ${cols} = ${currentProduct} ✓`);
-console.log('About to repopulate with', currentProduct, 'icons');
 repopulateHolding(currentProduct);
-console.log('Repopulate done');
 
   repopulateHolding(currentProduct);
 
