@@ -373,9 +373,7 @@ function confirmGrid(rect) {
 
   flashHint(`Nice! ${rows} × ${cols} = ${currentProduct} ✓`);
 
-  const totalConfirmed = confirmedGrids.reduce((sum, g) => sum + (g.rows * g.cols), 0);
-  const leftover = currentProduct - totalConfirmed;
-  repopulateHolding(leftover);
+  repopulateHolding(currentProduct);
 
   const stillRemaining = allFactorPairs.filter(p => !alreadyConfirmed(p.rows, p.cols));
   if (stillRemaining.length === 0) {
