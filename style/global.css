@@ -1,0 +1,138 @@
+/* ── Global Reset ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Color & Font Variables ── */
+:root {
+  --purple-deep:    #2d1b4e;
+  --purple-mid:     #5b3d8f;
+  --purple-light:   #9b7fd4;
+  --purple-pale:    #e8e0f5;
+  --cream:          #fdf8f2;
+  --text-dark:      #1e1230;
+  --text-mid:       #4a3770;
+  --accent-green:   #7a9e7e;
+  --accent-gold:    #c9a84c;
+  --font-title:     'Playfair Display', serif;
+  --font-body:      'Nunito', sans-serif;
+}
+
+/* ── Base ── */
+body {
+  background-color: var(--purple-deep);
+  color: var(--cream);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse at top, #3d2460 0%, #2d1b4e 60%);
+}
+
+/* ── Page Wrapper ── */
+.page-wrapper {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+.site-header {
+  text-align: center;
+  padding: 3rem 0 2.5rem;
+}
+
+.site-title {
+  font-family: var(--font-title);
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--cream);
+  letter-spacing: 0.02em;
+  margin: 0.5rem 0;
+}
+
+.site-tagline {
+  font-family: var(--font-title);
+  font-style: italic;
+  font-size: 1.1rem;
+  color: var(--purple-light);
+  margin-top: 0.5rem;
+}
+
+.header-decoration {
+  font-size: 1rem;
+  color: var(--purple-light);
+  letter-spacing: 0.5em;
+  margin: 0.75rem 0;
+}
+
+/* ── Game Shelf ── */
+.game-shelf {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+  padding: 2rem 0;
+  flex: 1;
+}
+
+/* ── Journal Card ── */
+.journal-card {
+  background-color: var(--cream);
+  color: var(--text-dark);
+  border-radius: 12px;
+  padding: 1.75rem;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border: 2px solid var(--accent-gold);
+  box-shadow:
+    0 4px 16px rgba(0,0,0,0.25),
+    inset 0 1px 0 rgba(255,255,255,0.8);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+
+.journal-card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 8px 24px rgba(0,0,0,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.8);
+}
+
+.card-icon {
+  font-size: 2rem;
+}
+
+.card-title {
+  font-family: var(--font-title);
+  font-size: 1.3rem;
+  color: var(--purple-deep);
+}
+
+.card-description {
+  font-size: 0.95rem;
+  color: var(--text-mid);
+  line-height: 1.6;
+}
+
+.card-corner {
+  margin-top: auto;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent-gold);
+  text-align: right;
+  letter-spacing: 0.05em;
+}
+
+/* ── Footer ── */
+.site-footer {
+  text-align: center;
+  padding: 2rem 0 1rem;
+  font-size: 0.9rem;
+  color: var(--purple-light);
+}
