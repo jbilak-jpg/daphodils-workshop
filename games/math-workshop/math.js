@@ -392,6 +392,23 @@ function confirmGrid(rect) {
   confirmedGrids.push({ rows, cols });
   placedIcons = {};
 
+  // Return remaining unplaced count to holding area
+  const totalPlaced = confirmedGrids.reduce((sum, g) => sum + g.rows * g.cols, 0);
+  const remaining = currentProduct - totalPlaced;
+  const icons = THEMES[currentTheme];
+  const holding = document.getElementById('holding-area');
+  for (let i = 0; i < remaining; i++) {
+    const icon = document.createElement('div');
+    icon.classList.add('holding-icon');
+    icon.textContent = icons[i % icons.length];
+    const angle = Math.random() * 20 - 10;
+    icon.style.transform = `rotate(${angle}deg)`;
+    icon.style.left = `${8 + Math.random() * 60}%`;
+    icon.style.top  = `${5 + Math.random() * 80}%`;
+    makeDraggableFromHolding(icon);
+    holding.appendChild(icon);
+  }
+
   // Add to sidebar
   const item = document.createElement('div');
   item.classList.add('discovered-item');
