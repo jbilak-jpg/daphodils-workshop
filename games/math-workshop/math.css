@@ -219,7 +219,8 @@
 /* ── Graph Paper Container ── */
 .canvas-container {
   flex: 1;
-  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overflow: scroll;
   border-radius: 12px;
   border: 2px solid rgba(255,255,255,0.1);
   min-width: 0;
