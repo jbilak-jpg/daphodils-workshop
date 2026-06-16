@@ -13,7 +13,10 @@ let currentProduct = null;
 let correctScore   = 0;
 let confirmedGrids = [];
 let allFactorPairs = [];
-let placedIcons    = {}; // key: "col,row" → { element, confirmed }
+let placedIcons    = {};
+
+// ── Touch detection ──
+const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
 // ── DOM References ──
 const themeScreen       = document.getElementById('theme-screen');
@@ -98,10 +101,8 @@ modeSwitch.addEventListener('click', () => {
 function startNewProblem() {
   currentProduct = pickProduct();
   confirmedGrids = [];
+  placedIcons    = {};
   allFactorPairs = getFactorPairs(currentProduct);
-
-  // Clear only unconfirmed icons from placedIcons
-  placedIcons = {};
 
   if (currentMode === 'multiplication') {
     problemText.textContent = `Find all the ways to arrange ${currentProduct} icons into a rectangle`;
@@ -144,20 +145,18 @@ function buildGraphPaperCells() {
   }
 }
 
-// ── Click a cell to place or remove an icon ──
+// ── Click/tap a cell to place or remove an icon ──
 function onCellClick(col, row) {
   const key = cellKey(col, row);
   const existing = placedIcons[key];
 
-  if (existing && existing.confirmed) return; // locked, ignore
+  if (existing && existing.confirmed) return;
 
   if (existing) {
-    // Return to holding
     existing.element.remove();
     delete placedIcons[key];
     addOneIconToHolding();
   } else {
-    // Place from holding if available
     const holding = document.getElementById('holding-area');
     if (!holding) return;
     const available = holding.querySelector('.holding-icon');
@@ -175,29 +174,36 @@ function placeIconOnGrid(emoji, col, row) {
 
   const icon = document.createElement('div');
   icon.classList.add('grid-icon', 'placed');
-  icon.textContent     = emoji;
-  icon.style.left      = `${col * CELL_SIZE}px`;
-  icon.style.top       = `${row * CELL_SIZE}px`;
-  icon.style.position  = 'absolute';
-  icon.style.zIndex    = '3';
-  icon.style.pointerEvents = 'auto';
-  icon.style.cursor    = 'grab';
+  icon.textContent        = emoji;
+  icon.style.left         = `${col * CELL_SIZE}px`;
+  icon.style.top          = `${row * CELL_SIZE}px`;
+  icon.style.position     = 'absolute';
+  icon.style.zIndex       = '3';
+  icon.style.pointerEvents = 'none';
 
   placedIcons[key] = { element: icon, confirmed: false };
   graphPaper.appendChild(icon);
 
-  // Allow dragging placed icons to new cells or back to holding
+  // On desktop only: make placed icons draggable
+  if (!isTouch) {
+    icon.style.pointerEvents = 'auto';
+    icon.style.cursor = 'grab';
+    addDragToPlacedIcon(icon, emoji, key);
+  }
+}
+
+// ── Add drag behavior to a placed icon (desktop only) ──
+function addDragToPlacedIcon(icon, emoji, key) {
   icon.addEventListener('mousedown', (e) => {
     e.preventDefault();
     e.stopPropagation();
     const entry = placedIcons[key];
-    if (entry && entry.confirmed) return;
+    if (!entry || entry.confirmed) return;
 
-    // Lift icon off grid
     delete placedIcons[key];
     icon.remove();
 
-    const floater = createFloater(emoji, e);
+    const floater = createFloater(emoji, e.clientX, e.clientY);
 
     function onMove(e) {
       floater.style.left = `${e.clientX - CELL_SIZE / 2}px`;
@@ -208,23 +214,7 @@ function placeIconOnGrid(emoji, col, row) {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
       floater.remove();
-
-      const gpRect = graphPaper.getBoundingClientRect();
-      const x = e.clientX - gpRect.left;
-      const y = e.clientY - gpRect.top;
-
-      if (x >= 0 && y >= 0 && x < gpRect.width && y < gpRect.height) {
-        const newCol = Math.max(0, Math.min(GRID_COLS - 1, Math.floor(x / CELL_SIZE)));
-        const newRow = Math.max(0, Math.min(GRID_ROWS - 1, Math.floor(y / CELL_SIZE)));
-        const newKey = cellKey(newCol, newRow);
-        if (placedIcons[newKey]) {
-          addOneIconToHolding();
-        } else {
-          placeIconOnGrid(emoji, newCol, newRow);
-        }
-      } else {
-        addOneIconToHolding();
-      }
+      dropAtClientXY(emoji, e.clientX, e.clientY);
     }
 
     document.addEventListener('mousemove', onMove);
@@ -232,7 +222,7 @@ function placeIconOnGrid(emoji, col, row) {
   });
 }
 
-// ── Build Holding Area with n icons ──
+// ── Build Holding Area ──
 function buildHoldingArea(count) {
   const old = document.getElementById('holding-area');
   if (old) old.remove();
@@ -247,20 +237,45 @@ function buildHoldingArea(count) {
 
   const canvasRow = document.querySelector('.canvas-row');
   canvasRow.insertBefore(holding, canvasRow.firstChild);
-
-  // Make holding area a drop target for dragging icons back
-  holding.addEventListener('mouseup', () => {});
 }
 
-// ── Create one holding icon element ──
+// ── Create one holding icon ──
 function createHoldingIcon(emoji) {
   const icon = document.createElement('div');
   icon.classList.add('holding-icon');
-  icon.textContent = emoji;
-  icon.style.left  = `${8 + Math.random() * 55}%`;
-  icon.style.top   = `${5 + Math.random() * 80}%`;
-  icon.style.transform = `rotate(${Math.random() * 20 - 10}deg)`;
-  makeDraggable(icon);
+  icon.textContent         = emoji;
+  icon.style.left          = `${8 + Math.random() * 55}%`;
+  icon.style.top           = `${5 + Math.random() * 80}%`;
+  icon.style.transform     = `rotate(${Math.random() * 20 - 10}deg)`;
+  icon.style.pointerEvents = 'auto';
+  icon.style.cursor        = isTouch ? 'pointer' : 'grab';
+
+  if (!isTouch) {
+    // Desktop: drag from holding to graph paper
+    icon.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      const emoji = icon.textContent;
+      icon.remove();
+
+      const floater = createFloater(emoji, e.clientX, e.clientY);
+
+      function onMove(e) {
+        floater.style.left = `${e.clientX - CELL_SIZE / 2}px`;
+        floater.style.top  = `${e.clientY - CELL_SIZE / 2}px`;
+      }
+
+      function onUp(e) {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        floater.remove();
+        dropAtClientXY(emoji, e.clientX, e.clientY);
+      }
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
   return icon;
 }
 
@@ -271,63 +286,40 @@ function addOneIconToHolding() {
   holding.appendChild(createHoldingIcon(randomEmoji()));
 }
 
-// ── Make a holding icon draggable ──
-function makeDraggable(icon) {
-  icon.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    const emoji = icon.textContent;
-    icon.remove();
+// ── Drop emoji at screen coordinates ──
+function dropAtClientXY(emoji, clientX, clientY) {
+  const gpRect = graphPaper.getBoundingClientRect();
+  const x = clientX - gpRect.left;
+  const y = clientY - gpRect.top;
 
-    const floater = createFloater(emoji, e);
-
-    function onMove(e) {
-      floater.style.left = `${e.clientX - CELL_SIZE / 2}px`;
-      floater.style.top  = `${e.clientY - CELL_SIZE / 2}px`;
+  if (x >= 0 && y >= 0 && x < gpRect.width && y < gpRect.height) {
+    const col = Math.max(0, Math.min(GRID_COLS - 1, Math.floor(x / CELL_SIZE)));
+    const row = Math.max(0, Math.min(GRID_ROWS - 1, Math.floor(y / CELL_SIZE)));
+    if (placedIcons[cellKey(col, row)]) {
+      addOneIconToHolding();
+    } else {
+      placeIconOnGrid(emoji, col, row);
     }
-
-    function onUp(e) {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-      floater.remove();
-
-      const gpRect = graphPaper.getBoundingClientRect();
-      const x = e.clientX - gpRect.left;
-      const y = e.clientY - gpRect.top;
-
-      if (x >= 0 && y >= 0 && x < gpRect.width && y < gpRect.height) {
-        const col = Math.max(0, Math.min(GRID_COLS - 1, Math.floor(x / CELL_SIZE)));
-        const row = Math.max(0, Math.min(GRID_ROWS - 1, Math.floor(y / CELL_SIZE)));
-        const key = cellKey(col, row);
-        if (placedIcons[key]) {
-          addOneIconToHolding(); // cell occupied, return
-        } else {
-          placeIconOnGrid(emoji, col, row);
-        }
-      } else {
-        addOneIconToHolding(); // dropped outside, return
-      }
-    }
-
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  });
+  } else {
+    addOneIconToHolding();
+  }
 }
 
 // ── Create floating drag element ──
-function createFloater(emoji, e) {
+function createFloater(emoji, clientX, clientY) {
   const floater = document.createElement('div');
   floater.classList.add('grid-icon', 'dragging');
-  floater.textContent      = emoji;
-  floater.style.position   = 'fixed';
-  floater.style.left       = `${e.clientX - CELL_SIZE / 2}px`;
-  floater.style.top        = `${e.clientY - CELL_SIZE / 2}px`;
-  floater.style.pointerEvents = 'none';
-  floater.style.zIndex     = '999';
-  floater.style.fontSize   = '1.6rem';
-  floater.style.width      = `${CELL_SIZE}px`;
-  floater.style.height     = `${CELL_SIZE}px`;
-  floater.style.display    = 'flex';
-  floater.style.alignItems = 'center';
+  floater.textContent          = emoji;
+  floater.style.position       = 'fixed';
+  floater.style.left           = `${clientX - CELL_SIZE / 2}px`;
+  floater.style.top            = `${clientY - CELL_SIZE / 2}px`;
+  floater.style.pointerEvents  = 'none';
+  floater.style.zIndex         = '999';
+  floater.style.fontSize       = '1.6rem';
+  floater.style.width          = `${CELL_SIZE}px`;
+  floater.style.height         = `${CELL_SIZE}px`;
+  floater.style.display        = 'flex';
+  floater.style.alignItems     = 'center';
   floater.style.justifyContent = 'center';
   document.body.appendChild(floater);
   return floater;
@@ -392,7 +384,6 @@ checkGridBtn.addEventListener('click', () => {
 function confirmGrid(rect) {
   const { rows, cols, minCol, minRow, maxCol, maxRow } = rect;
 
-  // Lock icons in place
   for (let r = minRow; r <= maxRow; r++) {
     for (let c = minCol; c <= maxCol; c++) {
       const entry = placedIcons[cellKey(c, r)];
@@ -400,11 +391,12 @@ function confirmGrid(rect) {
         entry.confirmed = true;
         entry.element.classList.remove('placed');
         entry.element.classList.add('confirmed');
+        entry.element.style.pointerEvents = 'none';
+        entry.element.style.cursor = 'default';
       }
     }
   }
 
-  // Draw border around confirmed grid
   const border = document.createElement('div');
   border.classList.add('confirmed-border');
   border.style.left     = `${minCol * CELL_SIZE}px`;
@@ -415,10 +407,8 @@ function confirmGrid(rect) {
   border.style.zIndex   = '5';
   graphPaper.appendChild(border);
 
-  // Record confirmed grid
   confirmedGrids.push({ rows, cols });
 
-  // Add to sidebar
   const item = document.createElement('div');
   item.classList.add('discovered-item');
   item.textContent = `${rows} × ${cols}`;
@@ -426,10 +416,8 @@ function confirmGrid(rect) {
 
   flashHint(`Nice! ${rows} × ${cols} = ${currentProduct} ✓`);
 
-  // Always give a full fresh set of icons for the next attempt
   buildHoldingArea(currentProduct);
 
-  // Check if all factor pairs found
   const stillRemaining = allFactorPairs.filter(p => !alreadyConfirmed(p.rows, p.cols));
   if (stillRemaining.length === 0) {
     setTimeout(triggerCelebration, 800);
