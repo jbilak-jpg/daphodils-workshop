@@ -1,0 +1,441 @@
+/* ── Layout ── */
+.app-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: var(--purple-deep);
+  background-image: radial-gradient(ellipse at top, #3d2460 0%, #2d1b4e 60%);
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ── Overlays ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 10, 40, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.overlay-box {
+  background: var(--cream);
+  border-radius: 20px;
+  padding: 2.5rem;
+  max-width: 480px;
+  width: 90%;
+  text-align: center;
+  border: 2px solid var(--accent-gold);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+}
+
+.overlay-title {
+  font-family: var(--font-title);
+  font-size: 2rem;
+  color: var(--purple-deep);
+  margin-bottom: 0.5rem;
+}
+
+.overlay-subtitle {
+  font-size: 1rem;
+  color: var(--text-mid);
+  margin-bottom: 1.5rem;
+}
+
+/* ── Theme Selector ── */
+.theme-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.theme-btn {
+  background: var(--purple-pale);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 1.25rem 1rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  font-family: var(--font-body);
+}
+
+.theme-btn:hover {
+  border-color: var(--purple-mid);
+  background: white;
+  transform: translateY(-2px);
+}
+
+.theme-icon {
+  font-size: 2.5rem;
+}
+
+.theme-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--purple-deep);
+}
+
+/* ── Top Nav ── */
+.top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+  background: rgba(0,0,0,0.2);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.nav-home {
+  color: var(--purple-light);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.nav-home:hover {
+  color: var(--cream);
+}
+
+.nav-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.nav-mode-label {
+  font-family: var(--font-title);
+  font-size: 1.1rem;
+  color: var(--cream);
+  font-weight: 700;
+}
+
+.nav-score {
+  font-size: 0.78rem;
+  color: var(--purple-light);
+}
+
+.nav-switch {
+  background: none;
+  border: 1px solid var(--purple-light);
+  color: var(--purple-light);
+  border-radius: 20px;
+  padding: 0.3rem 0.9rem;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-switch:hover {
+  background: var(--purple-light);
+  color: var(--purple-deep);
+}
+
+/* ── Workshop Layout ── */
+.workshop-layout {
+  display: flex;
+  flex: 1;
+  gap: 0;
+  overflow: hidden;
+}
+
+/* ── Game Area ── */
+.game-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem;
+  gap: 1rem;
+  overflow: hidden;
+}
+
+/* ── Problem Banner ── */
+.problem-banner {
+  background: rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  text-align: center;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.problem-text {
+  font-family: var(--font-title);
+  font-size: 1.4rem;
+  color: var(--cream);
+}
+
+.problem-hint {
+  font-size: 0.85rem;
+  color: var(--accent-gold);
+  margin-top: 0.3rem;
+  min-height: 1.2em;
+}
+
+/* ── Graph Paper ── */
+.canvas-container {
+  flex: 1;
+  overflow: auto;
+  border-radius: 12px;
+  border: 2px solid rgba(255,255,255,0.1);
+}
+
+.graph-paper {
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  background-color: #fdf8f2;
+  background-image:
+    linear-gradient(rgba(155, 127, 212, 0.25) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(155, 127, 212, 0.25) 1px, transparent 1px);
+  background-size: 48px 48px;
+  position: relative;
+  cursor: default;
+}
+
+/* ── Icons on Canvas ── */
+.grid-icon {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  cursor: grab;
+  user-select: none;
+  transition: transform 0.1s ease;
+  border-radius: 6px;
+}
+
+.grid-icon:hover {
+  transform: scale(1.15);
+  background: rgba(155, 127, 212, 0.15);
+}
+
+.grid-icon.dragging {
+  cursor: grabbing;
+  transform: scale(1.2);
+  z-index: 10;
+  opacity: 0.85;
+}
+
+.grid-icon.placed {
+  background: rgba(155, 127, 212, 0.12);
+}
+
+.grid-icon.confirmed {
+  background: rgba(122, 158, 126, 0.2);
+  pointer-events: none;
+}
+
+/* ── Action Bar ── */
+.action-bar {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.primary-btn {
+  background: var(--purple-mid);
+  color: var(--cream);
+  border: none;
+  border-radius: 24px;
+  padding: 0.6rem 1.4rem;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.primary-btn:hover {
+  background: var(--purple-light);
+  transform: translateY(-2px);
+}
+
+.secondary-btn {
+  background: transparent;
+  color: var(--purple-light);
+  border: 1px solid var(--purple-light);
+  border-radius: 24px;
+  padding: 0.6rem 1.4rem;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.secondary-btn:hover {
+  background: rgba(155, 127, 212, 0.1);
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 220px;
+  background: rgba(0,0,0,0.15);
+  border-left: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+  overflow-y: auto;
+}
+
+/* ── Fact Card ── */
+.fact-card {
+  background: var(--cream);
+  border-radius: 12px;
+  padding: 1rem;
+  border-left: 4px solid var(--accent-gold);
+}
+
+.fact-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent-gold);
+  letter-spacing: 0.08em;
+  margin-bottom: 0.4rem;
+  text-transform: uppercase;
+}
+
+.fact-text {
+  font-size: 0.85rem;
+  color: var(--text-dark);
+  line-height: 1.5;
+  font-style: italic;
+}
+
+/* ── Discovered Grids ── */
+.discovered-section {
+  flex: 1;
+}
+
+.discovered-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--purple-light);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+}
+
+.discovered-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.discovered-item {
+  background: rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  color: var(--cream);
+  border-left: 3px solid var(--accent-green);
+  font-weight: 600;
+}
+
+/* ── Celebration ── */
+.celebration-box {
+  animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes pop-in {
+  from { transform: scale(0.7); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+.celebration-icons {
+  font-size: 2.5rem;
+  letter-spacing: 0.3em;
+  margin-bottom: 1rem;
+  animation: wiggle 0.6s ease infinite alternate;
+}
+
+@keyframes wiggle {
+  from { transform: rotate(-5deg) scale(1); }
+  to   { transform: rotate(5deg) scale(1.1); }
+}/* ── Holding Area ── */
+#holding-area {
+  position: relative;
+  width: 160px;
+  min-height: 400px;
+  background: #e8e0f5;
+  border-radius: 12px;
+  border: 2px dashed var(--purple-light);
+  flex-shrink: 0;
+  margin: 1.25rem 0 1.25rem 1.25rem;
+  overflow: hidden;
+}
+
+.holding-icon {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  cursor: grab;
+  user-select: none;
+  border-radius: 8px;
+  transition: transform 0.15s ease;
+}
+
+.holding-icon:hover {
+  transform: scale(1.2) rotate(0deg) !important;
+  background: rgba(91, 61, 143, 0.1);
+}
+
+/* ── Confirmed Grid Border ── */
+.confirmed-border {
+  position: absolute;
+  border: 3px solid var(--accent-green);
+  border-radius: 6px;
+  background: rgba(122, 158, 126, 0.08);
+  pointer-events: none;
+  animation: border-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes border-pop {
+  from { transform: scale(0.95); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+
+/* ── Canvas Layout (holds holding area + graph paper side by side) ── */
+.game-area {
+  display: flex;
+  flex-direction: column;
+}
+
+.canvas-row {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  gap: 0;
+}
+
+/* ── Shake Animation ── */
+@keyframes shake {
+  0%   { transform: translateX(0); }
+  20%  { transform: translateX(-6px); }
+  40%  { transform: translateX(6px); }
+  60%  { transform: translateX(-4px); }
+  80%  { transform: translateX(4px); }
+  100% { transform: translateX(0); }
+}
+
+.shake {
+  animation: shake 0.5s ease;
+}

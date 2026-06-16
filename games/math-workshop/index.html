@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Math Workshop — Daphodil's Workshop</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../style/global.css" />
+  <link rel="stylesheet" href="math.css" />
+</head>
+<body>
+
+  <!-- THEME SELECTOR SCREEN -->
+  <div class="overlay" id="theme-screen">
+    <div class="overlay-box">
+      <h2 class="overlay-title">Welcome, Daphodil!</h2>
+      <p class="overlay-subtitle">Choose your theme for today</p>
+      <div class="theme-grid">
+        <button class="theme-btn" data-theme="forest">
+          <span class="theme-icon">🦊</span>
+          <span class="theme-name">Forest Friends</span>
+        </button>
+        <button class="theme-btn" data-theme="ocean">
+          <span class="theme-icon">🐬</span>
+          <span class="theme-name">Ocean World</span>
+        </button>
+        <button class="theme-btn" data-theme="garden">
+          <span class="theme-icon">🦋</span>
+          <span class="theme-name">Garden Party</span>
+        </button>
+        <button class="theme-btn" data-theme="night">
+          <span class="theme-icon">🦉</span>
+          <span class="theme-name">Night Sky</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CELEBRATION OVERLAY -->
+  <div class="overlay hidden" id="celebration-screen">
+    <div class="overlay-box celebration-box">
+      <div class="celebration-icons" id="celebration-icons"></div>
+      <h2 class="overlay-title" id="celebration-title">Amazing!</h2>
+      <p class="overlay-subtitle" id="celebration-message"></p>
+      <button class="primary-btn" id="next-problem-btn">Next Problem →</button>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div class="app-wrapper hidden" id="app">
+
+    <!-- TOP NAV -->
+    <nav class="top-nav">
+      <a href="../../index.html" class="nav-home">← Daphodil's Workshop</a>
+      <div class="nav-center">
+        <span class="nav-mode-label" id="mode-label">Multiplication</span>
+        <span class="nav-score" id="session-score">✦ 0 correct</span>
+      </div>
+      <button class="nav-switch" id="mode-switch">Division</button>
+    </nav>
+
+    <!-- MAIN LAYOUT -->
+    <div class="workshop-layout">
+
+      <!-- LEFT: GAME AREA -->
+      <div class="game-area">
+
+        <!-- PROBLEM DISPLAY -->
+        <div class="problem-banner">
+          <div class="problem-text" id="problem-text">Find all the ways to arrange 12</div>
+          <div class="problem-hint" id="problem-hint"></div>
+        </div>
+
+        <!-- GRAPH PAPER CANVAS -->
+        <div class="canvas-row">
+          <div class="canvas-container">
+            <div class="graph-paper" id="graph-paper"></div>
+          </div>
+        </div>
+
+        <!-- ACTION BUTTONS -->
+        <div class="action-bar">
+          <button class="secondary-btn" id="hint-btn">Need a hint? 🌿</button>
+          <button class="primary-btn" id="check-grid-btn">That's a grid! ✓</button>
+          <button class="primary-btn submit-btn" id="submit-btn">I found them all! 🎉</button>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: SIDEBAR -->
+      <div class="sidebar">
+
+        <!-- FUN FACT -->
+        <div class="fact-card">
+          <div class="fact-label">✦ Did you know?</div>
+          <div class="fact-text" id="fact-text"></div>
+        </div>
+
+        <!-- DISCOVERED GRIDS -->
+        <div class="discovered-section">
+          <div class="discovered-label">Grids found so far</div>
+          <div class="discovered-list" id="discovered-list"></div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+</body>
+<script src="../../data/facts.js"></script>
+<script src="math.js"></script>
+</html>
