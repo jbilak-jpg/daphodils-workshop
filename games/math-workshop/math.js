@@ -375,6 +375,67 @@ function confirmGrid(rect) {
       if (icon) {
         icon.classList.remove('placed');
         icon.classList.add('confirmed');
+        icon.style.pointerEvents = 'none';
+      }
+    }
+  }
+
+  // Draw border around confirmed grid
+  const border = document.createElement('div');
+  border.classList.add('confirmed-border');
+  border.style.left   = `${minCol * CELL_SIZE}px`;
+  border.style.top    = `${minRow * CELL_SIZE}px`;
+  border.style.width  = `${(maxCol - minCol + 1) * CELL_SIZE}px`;
+  border.style.height = `${(maxRow - minRow + 1) * CELL_SIZE}px`;
+  graphPaper.appendChild(border);
+
+  // Add to confirmed list
+  confirmedGrids.push({ rows, cols });
+  placedIcons = {};
+
+  // Add to sidebar
+  const item = document.createElement('div');
+  item.classList.add('discovered-item');
+  item.textContent = `${rows} × ${cols}`;
+  discoveredList.appendChild(item);
+
+  problemHint.textContent = `Nice! ${rows} × ${cols} = ${currentProduct} ✓`;
+
+  // Figure out how many icons are still unaccounted for
+  const totalConfirmed = confirmedGrids.reduce((sum, g) => sum + g.rows * g.cols, 0);
+  const remaining = currentProduct - totalConfirmed;
+
+  // Repopulate holding area with remaining icons
+  const holding = document.getElementById('holding-area');
+  if (holding && remaining > 0) {
+    const icons = THEMES[currentTheme];
+    for (let i = 0; i < remaining; i++) {
+      const newIcon = document.createElement('div');
+      newIcon.classList.add('holding-icon');
+      newIcon.textContent = icons[i % icons.length];
+      const angle = Math.random() * 20 - 10;
+      newIcon.style.transform = `rotate(${angle}deg)`;
+      newIcon.style.left = `${8 + Math.random() * 60}%`;
+      newIcon.style.top  = `${5 + Math.random() * 80}%`;
+      makeDraggableFromHolding(newIcon);
+      holding.appendChild(newIcon);
+    }
+  }
+
+  // Check if all factor pairs found
+  const stillRemaining = allFactorPairs.filter(p => !alreadyConfirmed(p.rows, p.cols));
+  if (stillRemaining.length === 0) {
+    setTimeout(triggerCelebration, 600);
+  }
+} rect;
+
+  // Highlight confirmed icons
+  for (let r = minRow; r <= maxRow; r++) {
+    for (let c = minCol; c <= maxCol; c++) {
+      const icon = placedIcons[cellKey(c, r)];
+      if (icon) {
+        icon.classList.remove('placed');
+        icon.classList.add('confirmed');
       }
     }
   }
