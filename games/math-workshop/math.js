@@ -90,4 +90,363 @@ document.querySelectorAll('.theme-btn').forEach(btn => {
 
 // ── Mode Switch ──
 modeSwitch.addEventListener('click', () => {
-  if (currentMode
+  if (currentMode === 'multiplication') {
+    currentMode = 'division';
+    modeLabel.textContent = 'Division';
+    modeSwitch.textContent = 'Multiplication';
+  } else {
+    currentMode = 'multiplication';
+    modeLabel.textContent = 'Multiplication';
+    modeSwitch.textContent = 'Division';
+  }
+  startNewProblem();
+});
+
+// ── Start a New Problem ──
+function startNewProblem() {
+  currentProduct = pickProduct();
+  confirmedGrids = [];
+  placedIcons    = {};
+  allFactorPairs = getFactorPairs(currentProduct);
+
+  if (currentMode === 'multiplication') {
+    problemText.textContent = `Find all the ways to arrange ${currentProduct} icons into a rectangle`;
+  } else {
+    problemText.textContent = `${currentProduct} ÷ ? — how many equal groups can you make?`;
+  }
+
+  problemHint.textContent  = '';
+  discoveredList.innerHTML = '';
+
+  const fact = (window.FACTS && window.FACTS[currentProduct])
+    ? window.FACTS[currentProduct]
+    : `${currentProduct} is a wonderful number!`;
+  factText.textContent = fact;
+
+  graphPaper.innerHTML = '';
+  buildHoldingArea();
+}
+
+// ── Build Holding Area ──
+function buildHoldingArea() {
+  const old = document.getElementById('holding-area');
+  if (old) old.remove();
+
+  const holding = document.createElement('div');
+  holding.id = 'holding-area';
+
+  const icons = THEMES[currentTheme];
+  for (let i = 0; i < currentProduct; i++) {
+    const icon = createHoldingIcon(icons[i % icons.length]);
+    holding.appendChild(icon);
+  }
+
+  const canvasRow = document.querySelector('.canvas-row');
+  canvasRow.insertBefore(holding, canvasRow.firstChild);
+}
+
+// ── Create a single holding area icon ──
+function createHoldingIcon(emoji) {
+  const icon = document.createElement('div');
+  icon.classList.add('holding-icon');
+  icon.textContent = emoji;
+  const angle = Math.random() * 20 - 10;
+  icon.style.transform = `rotate(${angle}deg)`;
+  icon.style.left = `${8 + Math.random() * 60}%`;
+  icon.style.top  = `${5 + Math.random() * 80}%`;
+  makeDraggableFromHolding(icon);
+  return icon;
+}
+
+// ── Repopulate holding area with n icons ──
+function repopulateHolding(count) {
+  const holding = document.getElementById('holding-area');
+  if (!holding || count <= 0) return;
+  const icons = THEMES[currentTheme];
+  for (let i = 0; i < count; i++) {
+    const icon = createHoldingIcon(icons[i % icons.length]);
+    holding.appendChild(icon);
+  }
+}
+
+// ── Drag from Holding Area to Graph Paper ──
+function makeDraggableFromHolding(icon) {
+  icon.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    const emoji = icon.textContent;
+    icon.remove();
+
+    const floater = createFloater(emoji, e);
+
+    function onMove(e) {
+      floater.style.left = `${e.clientX - CELL_SIZE / 2}px`;
+      floater.style.top  = `${e.clientY - CELL_SIZE / 2}px`;
+    }
+
+    function onUp(e) {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      floater.remove();
+
+      const rect = graphPaper.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      if (x >= 0 && y >= 0 && x < rect.width && y < rect.height) {
+        placeIconOnGrid(emoji, x, y);
+      } else {
+        returnToHolding(emoji);
+      }
+    }
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+}
+
+// ── Drag on Grid ──
+function makeDraggableOnGrid(icon, startCol, startRow) {
+  icon.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    const emoji = icon.textContent;
+    const key = cellKey(startCol, startRow);
+
+    delete placedIcons[key];
+    icon.remove();
+
+    const floater = createFloater(emoji, e);
+
+    function onMove(e) {
+      floater.style.left = `${e.clientX - CELL_SIZE / 2}px`;
+      floater.style.top  = `${e.clientY - CELL_SIZE / 2}px`;
+    }
+
+    function onUp(e) {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      floater.remove();
+
+      const rect = graphPaper.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      if (x >= 0 && y >= 0 && x < rect.width && y < rect.height) {
+        placeIconOnGrid(emoji, x, y);
+      } else {
+        returnToHolding(emoji);
+      }
+    }
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+}
+
+// ── Create a floating drag element ──
+function createFloater(emoji, e) {
+  const floater = document.createElement('div');
+  floater.classList.add('grid-icon', 'dragging');
+  floater.textContent = emoji;
+  floater.style.position = 'fixed';
+  floater.style.left = `${e.clientX - CELL_SIZE / 2}px`;
+  floater.style.top  = `${e.clientY - CELL_SIZE / 2}px`;
+  floater.style.pointerEvents = 'none';
+  floater.style.zIndex = '999';
+  document.body.appendChild(floater);
+  return floater;
+}
+
+// ── Place Icon on Grid ──
+function placeIconOnGrid(emoji, x, y) {
+  const { col, row } = snapToCell(x, y);
+  const key = cellKey(col, row);
+
+  if (placedIcons[key]) {
+    returnToHolding(emoji);
+    return;
+  }
+
+  const icon = document.createElement('div');
+  icon.classList.add('grid-icon', 'placed');
+  icon.textContent = emoji;
+  icon.style.left = `${col * CELL_SIZE}px`;
+  icon.style.top  = `${row * CELL_SIZE}px`;
+
+  placedIcons[key] = icon;
+  graphPaper.appendChild(icon);
+  makeDraggableOnGrid(icon, col, row);
+}
+
+// ── Return Icon to Holding Area ──
+function returnToHolding(emoji) {
+  const holding = document.getElementById('holding-area');
+  if (!holding) return;
+  const icon = createHoldingIcon(emoji);
+  holding.appendChild(icon);
+}
+
+// ── Check if placed icons form a valid rectangle ──
+function getPlacedRectangle() {
+  const keys = Object.keys(placedIcons);
+  if (keys.length < 2) return null;
+
+  const cols = keys.map(k => parseInt(k.split(',')[0]));
+  const rows = keys.map(k => parseInt(k.split(',')[1]));
+
+  const minCol = Math.min(...cols);
+  const maxCol = Math.max(...cols);
+  const minRow = Math.min(...rows);
+  const maxRow = Math.max(...rows);
+
+  const width  = maxCol - minCol + 1;
+  const height = maxRow - minRow + 1;
+
+  for (let r = minRow; r <= maxRow; r++) {
+    for (let c = minCol; c <= maxCol; c++) {
+      if (!placedIcons[cellKey(c, r)]) return null;
+    }
+  }
+
+  if (keys.length !== width * height) return null;
+
+  return { rows: height, cols: width, minCol, minRow, maxCol, maxRow };
+}
+
+// ── "That's a Grid!" Button ──
+checkGridBtn.addEventListener('click', () => {
+  const rect = getPlacedRectangle();
+
+  if (!rect) {
+    flashHint("That's not quite a rectangle yet — keep arranging! 🌿");
+    shakeCanvas();
+    return;
+  }
+
+  const { rows, cols } = rect;
+  const product = rows * cols;
+
+  if (product !== currentProduct) {
+    flashHint(`That rectangle has ${product} icons — you need ${currentProduct}! 🌿`);
+    shakeCanvas();
+    return;
+  }
+
+  if (alreadyConfirmed(rows, cols)) {
+    flashHint(`You already found a ${rows} × ${cols} grid! Try a different shape. ✨`);
+    shakeCanvas();
+    return;
+  }
+
+  confirmGrid(rect);
+});
+
+// ── Confirm a Valid Grid ──
+function confirmGrid(rect) {
+  const { rows, cols, minCol, minRow, maxCol, maxRow } = rect;
+
+  // Lock icons in place visually
+  for (let r = minRow; r <= maxRow; r++) {
+    for (let c = minCol; c <= maxCol; c++) {
+      const icon = placedIcons[cellKey(c, r)];
+      if (icon) {
+        icon.classList.remove('placed');
+        icon.classList.add('confirmed');
+        icon.style.pointerEvents = 'none';
+      }
+    }
+  }
+
+  // Draw border
+  const border = document.createElement('div');
+  border.classList.add('confirmed-border');
+  border.style.left   = `${minCol * CELL_SIZE}px`;
+  border.style.top    = `${minRow * CELL_SIZE}px`;
+  border.style.width  = `${(maxCol - minCol + 1) * CELL_SIZE}px`;
+  border.style.height = `${(maxRow - minRow + 1) * CELL_SIZE}px`;
+  graphPaper.appendChild(border);
+
+  // Record and clear placed icons
+  confirmedGrids.push({ rows, cols });
+  placedIcons = {};
+
+  // Add to sidebar
+  const item = document.createElement('div');
+  item.classList.add('discovered-item');
+  item.textContent = `${rows} × ${cols}`;
+  discoveredList.appendChild(item);
+
+  flashHint(`Nice! ${rows} × ${cols} = ${currentProduct} ✓`);
+
+  // Repopulate holding area with remaining icons
+  const totalConfirmed = confirmedGrids.reduce((sum, g) => sum + (g.rows * g.cols), 0);
+  const leftover = currentProduct - totalConfirmed;
+  repopulateHolding(leftover);
+
+  // Check if all factor pairs found
+  const stillRemaining = allFactorPairs.filter(p => !alreadyConfirmed(p.rows, p.cols));
+  if (stillRemaining.length === 0) {
+    setTimeout(triggerCelebration, 800);
+  }
+}
+
+// ── "I Found Them All!" Button ──
+submitBtn.addEventListener('click', () => {
+  const remaining = allFactorPairs.filter(p => !alreadyConfirmed(p.rows, p.cols));
+  if (remaining.length === 0) {
+    triggerCelebration();
+  } else {
+    const hint = remaining.map(p => `${p.rows} × ${p.cols}`).join(', ');
+    flashHint(`Not quite! You're still missing: ${hint} 🌿`);
+  }
+});
+
+// ── Hint Button ──
+hintBtn.addEventListener('click', () => {
+  const remaining = allFactorPairs.filter(p => !alreadyConfirmed(p.rows, p.cols));
+  if (remaining.length === 0) {
+    flashHint('You found them all! Hit the submit button! 🎉');
+  } else {
+    const next = remaining[0];
+    flashHint(`Try making a rectangle with ${next.rows} rows and ${next.cols} columns 🌿`);
+  }
+});
+
+// ── Flash hint ──
+function flashHint(msg) {
+  problemHint.textContent = msg;
+  setTimeout(() => {
+    if (problemHint.textContent === msg) problemHint.textContent = '';
+  }, 4000);
+}
+
+// ── Shake canvas ──
+function shakeCanvas() {
+  graphPaper.classList.add('shake');
+  setTimeout(() => graphPaper.classList.remove('shake'), 500);
+}
+
+// ── Celebration ──
+function triggerCelebration() {
+  correctScore++;
+  scoreEl.textContent = `✦ ${correctScore} correct`;
+
+  const icons = THEMES[currentTheme];
+  celebrationIcons.textContent = icons.slice(0, 4).join(' ');
+
+  const titles = ['Amazing!', 'Brilliant!', 'You did it!', 'Spectacular!'];
+  const messages = [
+    `You found all ${allFactorPairs.length} ways to arrange ${currentProduct}!`,
+    `Every single rectangle — you got them all!`,
+    `${currentProduct} has never looked so good!`
+  ];
+
+  celebrationTitle.textContent = titles[Math.floor(Math.random() * titles.length)];
+  celebrationMsg.textContent   = messages[Math.floor(Math.random() * messages.length)];
+  celebrationScreen.classList.remove('hidden');
+}
+
+// ── Next Problem ──
+nextProblemBtn.addEventListener('click', () => {
+  celebrationScreen.classList.add('hidden');
+  startNewProblem();
+});
