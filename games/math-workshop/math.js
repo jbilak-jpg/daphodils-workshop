@@ -167,7 +167,9 @@ function repopulateHolding(count) {
     const icon = createHoldingIcon(icons[i % icons.length]);
     holding.appendChild(icon);
   }
-}// ── Drag from Holding Area to Graph Paper ──
+}
+
+// ── Drag from Holding Area to Graph Paper ──
 function makeDraggableFromHolding(icon) {
   icon.addEventListener('mousedown', (e) => {
     e.preventDefault();
@@ -186,11 +188,11 @@ function makeDraggableFromHolding(icon) {
       document.removeEventListener('mouseup', onUp);
       floater.remove();
 
-      const rect = graphPaper.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      const gpRect = graphPaper.getBoundingClientRect();
+      const x = e.clientX - gpRect.left;
+      const y = e.clientY - gpRect.top;
 
-      if (x >= 0 && y >= 0 && x < rect.width && y < rect.height) {
+      if (x >= 0 && y >= 0 && x < gpRect.width && y < gpRect.height) {
         placeIconOnGrid(emoji, x, y);
       } else {
         returnToHolding(emoji);
@@ -224,11 +226,11 @@ function makeDraggableOnGrid(icon, startCol, startRow) {
       document.removeEventListener('mouseup', onUp);
       floater.remove();
 
-      const rect = graphPaper.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      const gpRect = graphPaper.getBoundingClientRect();
+      const x = e.clientX - gpRect.left;
+      const y = e.clientY - gpRect.top;
 
-      if (x >= 0 && y >= 0 && x < rect.width && y < rect.height) {
+      if (x >= 0 && y >= 0 && x < gpRect.width && y < gpRect.height) {
         placeIconOnGrid(emoji, x, y);
       } else {
         returnToHolding(emoji);
