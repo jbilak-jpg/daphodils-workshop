@@ -145,7 +145,7 @@ function buildHoldingArea() {
   canvasRow.insertBefore(holding, canvasRow.firstChild);
 }
 
-// ── Create a single holding area icon ──
+// ── Create a single holding icon ──
 function createHoldingIcon(emoji) {
   const icon = document.createElement('div');
   icon.classList.add('holding-icon');
@@ -158,7 +158,7 @@ function createHoldingIcon(emoji) {
   return icon;
 }
 
-// ── Repopulate holding area with n icons ──
+// ── Repopulate holding area ──
 function repopulateHolding(count) {
   const holding = document.getElementById('holding-area');
   if (!holding || count <= 0) return;
@@ -167,9 +167,7 @@ function repopulateHolding(count) {
     const icon = createHoldingIcon(icons[i % icons.length]);
     holding.appendChild(icon);
   }
-}
-
-// ── Drag from Holding Area to Graph Paper ──
+}// ── Drag from Holding Area to Graph Paper ──
 function makeDraggableFromHolding(icon) {
   icon.addEventListener('mousedown', (e) => {
     e.preventDefault();
@@ -344,7 +342,6 @@ checkGridBtn.addEventListener('click', () => {
 function confirmGrid(rect) {
   const { rows, cols, minCol, minRow, maxCol, maxRow } = rect;
 
-  // Lock icons in place visually
   for (let r = minRow; r <= maxRow; r++) {
     for (let c = minCol; c <= maxCol; c++) {
       const icon = placedIcons[cellKey(c, r)];
@@ -356,7 +353,6 @@ function confirmGrid(rect) {
     }
   }
 
-  // Draw border
   const border = document.createElement('div');
   border.classList.add('confirmed-border');
   border.style.left   = `${minCol * CELL_SIZE}px`;
@@ -365,11 +361,9 @@ function confirmGrid(rect) {
   border.style.height = `${(maxRow - minRow + 1) * CELL_SIZE}px`;
   graphPaper.appendChild(border);
 
-  // Record and clear placed icons
   confirmedGrids.push({ rows, cols });
   placedIcons = {};
 
-  // Add to sidebar
   const item = document.createElement('div');
   item.classList.add('discovered-item');
   item.textContent = `${rows} × ${cols}`;
@@ -377,12 +371,10 @@ function confirmGrid(rect) {
 
   flashHint(`Nice! ${rows} × ${cols} = ${currentProduct} ✓`);
 
-  // Repopulate holding area with remaining icons
   const totalConfirmed = confirmedGrids.reduce((sum, g) => sum + (g.rows * g.cols), 0);
   const leftover = currentProduct - totalConfirmed;
   repopulateHolding(leftover);
 
-  // Check if all factor pairs found
   const stillRemaining = allFactorPairs.filter(p => !alreadyConfirmed(p.rows, p.cols));
   if (stillRemaining.length === 0) {
     setTimeout(triggerCelebration, 800);
@@ -391,22 +383,22 @@ function confirmGrid(rect) {
 
 // ── "I Found Them All!" Button ──
 submitBtn.addEventListener('click', () => {
-  const remaining = allFactorPairs.filter(p => !alreadyConfirmed(p.rows, p.cols));
-  if (remaining.length === 0) {
+  const stillRemaining = allFactorPairs.filter(p => !alreadyConfirmed(p.rows, p.cols));
+  if (stillRemaining.length === 0) {
     triggerCelebration();
   } else {
-    const hint = remaining.map(p => `${p.rows} × ${p.cols}`).join(', ');
+    const hint = stillRemaining.map(p => `${p.rows} × ${p.cols}`).join(', ');
     flashHint(`Not quite! You're still missing: ${hint} 🌿`);
   }
 });
 
 // ── Hint Button ──
 hintBtn.addEventListener('click', () => {
-  const remaining = allFactorPairs.filter(p => !alreadyConfirmed(p.rows, p.cols));
-  if (remaining.length === 0) {
+  const stillRemaining = allFactorPairs.filter(p => !alreadyConfirmed(p.rows, p.cols));
+  if (stillRemaining.length === 0) {
     flashHint('You found them all! Hit the submit button! 🎉');
   } else {
-    const next = remaining[0];
+    const next = stillRemaining[0];
     flashHint(`Try making a rectangle with ${next.rows} rows and ${next.cols} columns 🌿`);
   }
 });
