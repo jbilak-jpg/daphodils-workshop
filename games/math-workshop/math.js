@@ -37,8 +37,8 @@ const celebrationIcons  = document.getElementById('celebration-icons');
 
 // ── Grid Config ──
 const CELL_SIZE = 48;
-const GRID_COLS = 20;
-const GRID_ROWS = 12;
+const GRID_COLS = 25;
+const GRID_ROWS = 15;
 
 // ── Get all factor pairs for a number ──
 function getFactorPairs(n) {
@@ -76,6 +76,21 @@ function cellKey(col, row) {
 // ── Already confirmed this pair? ──
 function alreadyConfirmed(rows, cols) {
   return confirmedGrids.some(g => g.rows === rows && g.cols === cols);
+}
+
+// ── Count icons currently locked in confirmed grids ──
+function countConfirmedIcons() {
+  return confirmedGrids.reduce((sum, g) => sum + (g.rows * g.cols), 0);
+}
+
+// ── Count icons currently placed on grid (not confirmed) ──
+function countPlacedIcons() {
+  return Object.keys(placedIcons).length;
+}
+
+// ── How many icons should be in holding area ──
+function holdingCount() {
+  return currentProduct - countConfirmedIcons() - countPlacedIcons();
 }
 
 // ── Theme Selection ──
@@ -124,7 +139,79 @@ function startNewProblem() {
   factText.textContent = fact;
 
   graphPaper.innerHTML = '';
+  buildGraphPaperCells();
   buildHoldingArea();
+}
+
+// ── Build clickable graph paper cells ──
+function buildGraphPaperCells() {
+  graphPaper.style.width  = `${GRID_COLS * CELL_SIZE}px`;
+  graphPaper.style.height = `${GRID_ROWS * CELL_SIZE}px`;
+  graphPaper.style.position = 'relative';
+
+  for (let r = 0; r < GRID_ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      const cell = document.createElement('div');
+      cell.classList.add('graph-cell');
+      cell.style.left   = `${c * CELL_SIZE}px`;
+      cell.style.top    = `${r * CELL_SIZE}px`;
+      cell.style.width  = `${CELL_SIZE}px`;
+      cell.style.height = `${CELL_SIZE}px`;
+      cell.dataset.col  = c;
+      cell.dataset.row  = r;
+
+      cell.addEventListener('click', () => onCellClick(c, r, cell));
+      graphPaper.appendChild(cell);
+    }
+  }
+}
+
+// ── Click a cell to place or remove an icon ──
+function onCellClick(col, row, cell) {
+  const key = cellKey(col, row);
+  const existing = placedIcons[key];
+
+  if (existing && existing.confirmed) return; // locked, ignore
+
+  if (existing) {
+    // Return icon to holding area
+    existing.element.remove();
+    delete placedIcons[key];
+    addIconToHolding(getThemeEmoji());
+  } else {
+    // Place icon from holding area if available
+    const holding = document.getElementById('holding-area');
+    if (!holding) return;
+    const availableIcon = holding.querySelector('.holding-icon');
+    if (!availableIcon) return;
+
+    const emoji = availableIcon.textContent;
+    availableIcon.remove();
+    placeIconOnGrid(emoji, col, row);
+  }
+}
+
+// ── Get a theme emoji ──
+function getThemeEmoji() {
+  const icons = THEMES[currentTheme];
+  return icons[Math.floor(Math.random() * icons.length)];
+}
+
+// ── Place Icon on Grid ──
+function placeIconOnGrid(emoji, col, row) {
+  const key = cellKey(col, row);
+  if (placedIcons[key]) return;
+
+  const icon = document.createElement('div');
+  icon.classList.add('grid-icon', 'placed');
+  icon.textContent = emoji;
+  icon.style.left = `${col * CELL_SIZE}px`;
+  icon.style.top  = `${row * CELL_SIZE}px`;
+  icon.style.position = 'absolute';
+  icon.style.pointerEvents = 'none';
+
+  placedIcons[key] = { element: icon, confirmed: false };
+  graphPaper.appendChild(icon);
 }
 
 // ── Build Holding Area ──
@@ -137,7 +224,13 @@ function buildHoldingArea() {
 
   const icons = THEMES[currentTheme];
   for (let i = 0; i < currentProduct; i++) {
-    const icon = createHoldingIcon(icons[i % icons.length]);
+    const icon = document.createElement('div');
+    icon.classList.add('holding-icon');
+    icon.textContent = icons[i % icons.length];
+    const angle = Math.random() * 20 - 10;
+    icon.style.transform = `rotate(${angle}deg)`;
+    icon.style.left = `${8 + Math.random() * 60}%`;
+    icon.style.top  = `${5 + Math.random() * 80}%`;
     holding.appendChild(icon);
   }
 
@@ -145,8 +238,10 @@ function buildHoldingArea() {
   canvasRow.insertBefore(holding, canvasRow.firstChild);
 }
 
-// ── Create a single holding icon ──
-function createHoldingIcon(emoji) {
+// ── Add one icon back to holding area ──
+function addIconToHolding(emoji) {
+  const holding = document.getElementById('holding-area');
+  if (!holding) return;
   const icon = document.createElement('div');
   icon.classList.add('holding-icon');
   icon.textContent = emoji;
@@ -154,140 +249,36 @@ function createHoldingIcon(emoji) {
   icon.style.transform = `rotate(${angle}deg)`;
   icon.style.left = `${8 + Math.random() * 60}%`;
   icon.style.top  = `${5 + Math.random() * 80}%`;
-  makeDraggableFromHolding(icon);
-  return icon;
+  holding.appendChild(icon);
 }
 
-// ── Repopulate holding area ──
-function repopulateHolding(count) {
+// ── Refill holding area after a confirmed grid ──
+function refillHoldingArea() {
   const holding = document.getElementById('holding-area');
-  if (!holding || count <= 0) return;
+  if (!holding) return;
+
+  // Clear current holding icons
+  holding.innerHTML = '';
+
+  // Correct count: total minus confirmed minus currently placed
+  const needed = currentProduct - countConfirmedIcons() - countPlacedIcons();
   const icons = THEMES[currentTheme];
-  for (let i = 0; i < count; i++) {
-    const icon = createHoldingIcon(icons[i % icons.length]);
+
+  for (let i = 0; i < needed; i++) {
+    const icon = document.createElement('div');
+    icon.classList.add('holding-icon');
+    icon.textContent = icons[i % icons.length];
+    const angle = Math.random() * 20 - 10;
+    icon.style.transform = `rotate(${angle}deg)`;
+    icon.style.left = `${8 + Math.random() * 60}%`;
+    icon.style.top  = `${5 + Math.random() * 80}%`;
     holding.appendChild(icon);
   }
 }
 
-// ── Drag from Holding Area to Graph Paper ──
-function makeDraggableFromHolding(icon) {
-  icon.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    const emoji = icon.textContent;
-    icon.remove();
-
-    const floater = createFloater(emoji, e);
-
-    function onMove(e) {
-      floater.style.left = `${e.clientX - CELL_SIZE / 2}px`;
-      floater.style.top  = `${e.clientY - CELL_SIZE / 2}px`;
-    }
-
-    function onUp(e) {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-      floater.remove();
-
-      const gpRect = graphPaper.getBoundingClientRect();
-      const x = e.clientX - gpRect.left;
-      const y = e.clientY - gpRect.top;
-
-      if (x >= 0 && y >= 0 && x < gpRect.width && y < gpRect.height) {
-        placeIconOnGrid(emoji, x, y);
-      } else {
-        returnToHolding(emoji);
-      }
-    }
-
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  });
-}
-
-// ── Drag on Grid ──
-function makeDraggableOnGrid(icon, startCol, startRow) {
-  icon.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    const emoji = icon.textContent;
-    const key = cellKey(startCol, startRow);
-
-    delete placedIcons[key];
-    icon.remove();
-
-    const floater = createFloater(emoji, e);
-
-    function onMove(e) {
-      floater.style.left = `${e.clientX - CELL_SIZE / 2}px`;
-      floater.style.top  = `${e.clientY - CELL_SIZE / 2}px`;
-    }
-
-    function onUp(e) {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-      floater.remove();
-
-      const gpRect = graphPaper.getBoundingClientRect();
-      const x = e.clientX - gpRect.left;
-      const y = e.clientY - gpRect.top;
-
-      if (x >= 0 && y >= 0 && x < gpRect.width && y < gpRect.height) {
-        placeIconOnGrid(emoji, x, y);
-      } else {
-        returnToHolding(emoji);
-      }
-    }
-
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  });
-}
-
-// ── Create a floating drag element ──
-function createFloater(emoji, e) {
-  const floater = document.createElement('div');
-  floater.classList.add('grid-icon', 'dragging');
-  floater.textContent = emoji;
-  floater.style.position = 'fixed';
-  floater.style.left = `${e.clientX - CELL_SIZE / 2}px`;
-  floater.style.top  = `${e.clientY - CELL_SIZE / 2}px`;
-  floater.style.pointerEvents = 'none';
-  floater.style.zIndex = '999';
-  document.body.appendChild(floater);
-  return floater;
-}
-
-// ── Place Icon on Grid ──
-function placeIconOnGrid(emoji, x, y) {
-  const { col, row } = snapToCell(x, y);
-  const key = cellKey(col, row);
-
-  if (placedIcons[key]) {
-    returnToHolding(emoji);
-    return;
-  }
-
-  const icon = document.createElement('div');
-  icon.classList.add('grid-icon', 'placed');
-  icon.textContent = emoji;
-  icon.style.left = `${col * CELL_SIZE}px`;
-  icon.style.top  = `${row * CELL_SIZE}px`;
-
-  placedIcons[key] = icon;
-  graphPaper.appendChild(icon);
-  makeDraggableOnGrid(icon, col, row);
-}
-
-// ── Return Icon to Holding Area ──
-function returnToHolding(emoji) {
-  const holding = document.getElementById('holding-area');
-  if (!holding) return;
-  const icon = createHoldingIcon(emoji);
-  holding.appendChild(icon);
-}
-
 // ── Check if placed icons form a valid rectangle ──
 function getPlacedRectangle() {
-  const keys = Object.keys(placedIcons);
+  const keys = Object.keys(placedIcons).filter(k => !placedIcons[k].confirmed);
   if (keys.length < 2) return null;
 
   const cols = keys.map(k => parseInt(k.split(',')[0]));
@@ -303,7 +294,8 @@ function getPlacedRectangle() {
 
   for (let r = minRow; r <= maxRow; r++) {
     for (let c = minCol; c <= maxCol; c++) {
-      if (!placedIcons[cellKey(c, r)]) return null;
+      const entry = placedIcons[cellKey(c, r)];
+      if (!entry || entry.confirmed) return null;
     }
   }
 
@@ -344,38 +336,45 @@ checkGridBtn.addEventListener('click', () => {
 function confirmGrid(rect) {
   const { rows, cols, minCol, minRow, maxCol, maxRow } = rect;
 
+  // Lock icons
   for (let r = minRow; r <= maxRow; r++) {
     for (let c = minCol; c <= maxCol; c++) {
-      const icon = placedIcons[cellKey(c, r)];
-      if (icon) {
-        icon.classList.remove('placed');
-        icon.classList.add('confirmed');
-        icon.style.pointerEvents = 'none';
+      const entry = placedIcons[cellKey(c, r)];
+      if (entry) {
+        entry.confirmed = true;
+        entry.element.classList.remove('placed');
+        entry.element.classList.add('confirmed');
       }
     }
   }
 
+  // Draw border
   const border = document.createElement('div');
   border.classList.add('confirmed-border');
   border.style.left   = `${minCol * CELL_SIZE}px`;
   border.style.top    = `${minRow * CELL_SIZE}px`;
   border.style.width  = `${(maxCol - minCol + 1) * CELL_SIZE}px`;
   border.style.height = `${(maxRow - minRow + 1) * CELL_SIZE}px`;
+  border.style.position = 'absolute';
+  border.style.pointerEvents = 'none';
+  border.style.zIndex = '5';
   graphPaper.appendChild(border);
 
+  // Record
   confirmedGrids.push({ rows, cols });
-  placedIcons = {};
 
+  // Add to sidebar
   const item = document.createElement('div');
   item.classList.add('discovered-item');
   item.textContent = `${rows} × ${cols}`;
   discoveredList.appendChild(item);
 
- flashHint(`Nice! ${rows} × ${cols} = ${currentProduct} ✓`);
-repopulateHolding(currentProduct);
+  flashHint(`Nice! ${rows} × ${cols} = ${currentProduct} ✓`);
 
-  repopulateHolding(currentProduct);
+  // Refill holding area with correct count
+  refillHoldingArea();
 
+  // Check if all factor pairs found
   const stillRemaining = allFactorPairs.filter(p => !alreadyConfirmed(p.rows, p.cols));
   if (stillRemaining.length === 0) {
     setTimeout(triggerCelebration, 800);
