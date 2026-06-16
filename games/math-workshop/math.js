@@ -261,8 +261,7 @@ function refillHoldingArea() {
   holding.innerHTML = '';
 
   // Correct count: total minus confirmed minus currently placed
-  const needed = currentProduct - countConfirmedIcons() - countPlacedIcons();
-  const icons = THEMES[currentTheme];
+const needed = currentProduct - countConfirmedIcons();  const icons = THEMES[currentTheme];
 
   for (let i = 0; i < needed; i++) {
     const icon = document.createElement('div');
