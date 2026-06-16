@@ -371,7 +371,10 @@ function confirmGrid(rect) {
   item.textContent = `${rows} × ${cols}`;
   discoveredList.appendChild(item);
 
-  flashHint(`Nice! ${rows} × ${cols} = ${currentProduct} ✓`);
+ flashHint(`Nice! ${rows} × ${cols} = ${currentProduct} ✓`);
+console.log('About to repopulate with', currentProduct, 'icons');
+repopulateHolding(currentProduct);
+console.log('Repopulate done');
 
   repopulateHolding(currentProduct);
 
