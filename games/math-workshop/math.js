@@ -25,18 +25,20 @@ const app               = document.getElementById('app');
 const modeLabel         = document.getElementById('mode-label');
 const modeSwitch        = document.getElementById('mode-switch');
 const scoreEl           = document.getElementById('session-score');
-const problemText       = document.getElementById('problem-text');
+const problemLabel      = document.getElementById('problem-label');
+const productDisplay    = document.getElementById('product-display');
 const problemHint       = document.getElementById('problem-hint');
 const graphPaper        = document.getElementById('graph-paper');
 const hintBtn           = document.getElementById('hint-btn');
 const checkGridBtn      = document.getElementById('check-grid-btn');
-const submitBtn         = document.getElementById('submit-btn');
+const freebieBtn        = document.getElementById('freebie-btn');
 const factText          = document.getElementById('fact-text');
 const discoveredList    = document.getElementById('discovered-list');
 const nextProblemBtn    = document.getElementById('next-problem-btn');
 const celebrationTitle  = document.getElementById('celebration-title');
 const celebrationMsg    = document.getElementById('celebration-message');
 const celebrationIcons  = document.getElementById('celebration-icons');
+const celebrationExtra  = document.getElementById('celebration-extra');
 
 // ── Grid Config ──
 const CELL_SIZE = 48;
@@ -52,12 +54,21 @@ function getFactorPairs(n) {
   return pairs;
 }
 
+function isPrime(n) {
+  if (n < 2) return false;
+  for (let i = 2; i <= Math.sqrt(n); i++) {
+    if (n % i === 0) return false;
+  }
+  return true;
+}
+
+function isPerfectSquare(n) {
+  const s = Math.sqrt(n);
+  return Number.isInteger(s);
+}
+
 function pickProduct() {
-  const pool = [6, 8, 9, 10, 12, 15, 16, 18, 20, 24];
-  if (correctScore >= 3)  pool.push(25, 27, 28, 30, 32, 36);
-  if (correctScore >= 6)  pool.push(40, 42, 45, 48, 49, 50);
-  if (correctScore >= 10) pool.push(54, 56, 60, 63, 64, 72, 81, 100);
-  return pool[Math.floor(Math.random() * pool.length)];
+  return Math.floor(Math.random() * 99) + 2; // 2 to 100
 }
 
 function cellKey(col, row) { return `${col},${row}`; }
@@ -104,14 +115,9 @@ function startNewProblem() {
   placedIcons    = {};
   allFactorPairs = getFactorPairs(currentProduct);
 
-  if (currentMode === 'multiplication') {
-    problemText.textContent = `Find all the ways to arrange ${currentProduct} icons into a rectangle`;
-  } else {
-    problemText.textContent = `${currentProduct} ÷ ? — how many equal groups can you make?`;
-  }
-
-  problemHint.textContent  = '';
-  discoveredList.innerHTML = '';
+  productDisplay.textContent = currentProduct;
+  problemHint.textContent    = '';
+  discoveredList.innerHTML   = '';
 
   const fact = (window.FACTS && window.FACTS[currentProduct])
     ? window.FACTS[currentProduct]
@@ -145,7 +151,7 @@ function buildGraphPaperCells() {
   }
 }
 
-// ── Click/tap a cell to place or remove an icon ──
+// ── Click/tap a cell ──
 function onCellClick(col, row) {
   const key = cellKey(col, row);
   const existing = placedIcons[key];
@@ -184,7 +190,6 @@ function placeIconOnGrid(emoji, col, row) {
   placedIcons[key] = { element: icon, confirmed: false };
   graphPaper.appendChild(icon);
 
-  // On desktop only: make placed icons draggable
   if (!isTouch) {
     icon.style.pointerEvents = 'auto';
     icon.style.cursor = 'grab';
@@ -192,7 +197,7 @@ function placeIconOnGrid(emoji, col, row) {
   }
 }
 
-// ── Add drag behavior to a placed icon (desktop only) ──
+// ── Drag placed icon (desktop) ──
 function addDragToPlacedIcon(icon, emoji, key) {
   icon.addEventListener('mousedown', (e) => {
     e.preventDefault();
@@ -251,7 +256,6 @@ function createHoldingIcon(emoji) {
   icon.style.cursor        = isTouch ? 'pointer' : 'grab';
 
   if (!isTouch) {
-    // Desktop: drag from holding to graph paper
     icon.addEventListener('mousedown', (e) => {
       e.preventDefault();
       const emoji = icon.textContent;
@@ -279,14 +283,14 @@ function createHoldingIcon(emoji) {
   return icon;
 }
 
-// ── Add one icon back to holding area ──
+// ── Add one icon back to holding ──
 function addOneIconToHolding() {
   const holding = document.getElementById('holding-area');
   if (!holding) return;
   holding.appendChild(createHoldingIcon(randomEmoji()));
 }
 
-// ── Drop emoji at screen coordinates ──
+// ── Drop at screen coordinates ──
 function dropAtClientXY(emoji, clientX, clientY) {
   const gpRect = graphPaper.getBoundingClientRect();
   const x = clientX - gpRect.left;
@@ -325,7 +329,82 @@ function createFloater(emoji, clientX, clientY) {
   return floater;
 }
 
-// ── Check if unconfirmed placed icons form a valid rectangle ──
+// ── Freebie Button — auto-confirm 1×n and n×1 ──
+freebieBtn.addEventListener('click', () => {
+  autoConfirmRect(1, currentProduct);
+  autoConfirmRect(currentProduct, 1);
+
+  const stillRemaining = allFactorPairs.filter(p => !alreadyConfirmed(p.rows, p.cols));
+  if (stillRemaining.length === 0) {
+    setTimeout(triggerCelebration, 800);
+  }
+});
+
+// ── Auto-confirm a rectangle without placing icons manually ──
+function autoConfirmRect(rows, cols) {
+  if (alreadyConfirmed(rows, cols)) return;
+
+  const emoji = randomEmoji();
+  const startCol = findFreeStartCol(rows, cols);
+  if (startCol === null) return;
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const col = startCol + c;
+      const key = cellKey(col, r);
+      if (placedIcons[key]) continue;
+
+      const icon = document.createElement('div');
+      icon.classList.add('grid-icon', 'confirmed');
+      icon.textContent        = emoji;
+      icon.style.left         = `${col * CELL_SIZE}px`;
+      icon.style.top          = `${r * CELL_SIZE}px`;
+      icon.style.position     = 'absolute';
+      icon.style.zIndex       = '3';
+      icon.style.pointerEvents = 'none';
+      graphPaper.appendChild(icon);
+      placedIcons[key] = { element: icon, confirmed: true };
+    }
+  }
+
+  const border = document.createElement('div');
+  border.classList.add('confirmed-border');
+  border.style.left     = `${startCol * CELL_SIZE}px`;
+  border.style.top      = '0px';
+  border.style.width    = `${cols * CELL_SIZE}px`;
+  border.style.height   = `${rows * CELL_SIZE}px`;
+  border.style.position = 'absolute';
+  border.style.zIndex   = '5';
+  graphPaper.appendChild(border);
+
+  confirmedGrids.push({ rows, cols });
+
+  const item = document.createElement('div');
+  item.classList.add('discovered-item');
+  item.textContent = `${rows} × ${cols}`;
+  discoveredList.appendChild(item);
+
+  buildHoldingArea(currentProduct);
+}
+
+// ── Find a free starting column for an auto-rect ──
+function findFreeStartCol(rows, cols) {
+  for (let startCol = 0; startCol + cols <= GRID_COLS; startCol++) {
+    let free = true;
+    outer: for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (placedIcons[cellKey(startCol + c, r)]) {
+          free = false;
+          break outer;
+        }
+      }
+    }
+    if (free) return startCol;
+  }
+  return null;
+}
+
+// ── Check rectangle ──
 function getPlacedRectangle() {
   const keys = Object.keys(placedIcons).filter(k => !placedIcons[k].confirmed);
   if (keys.length < 2) return null;
@@ -383,6 +462,7 @@ checkGridBtn.addEventListener('click', () => {
 // ── Confirm a Valid Grid ──
 function confirmGrid(rect) {
   const { rows, cols, minCol, minRow, maxCol, maxRow } = rect;
+  const isSquare = rows === cols;
 
   for (let r = minRow; r <= maxRow; r++) {
     for (let c = minCol; c <= maxCol; c++) {
@@ -399,6 +479,7 @@ function confirmGrid(rect) {
 
   const border = document.createElement('div');
   border.classList.add('confirmed-border');
+  if (isSquare) border.classList.add('square-border');
   border.style.left     = `${minCol * CELL_SIZE}px`;
   border.style.top      = `${minRow * CELL_SIZE}px`;
   border.style.width    = `${(maxCol - minCol + 1) * CELL_SIZE}px`;
@@ -411,37 +492,41 @@ function confirmGrid(rect) {
 
   const item = document.createElement('div');
   item.classList.add('discovered-item');
-  item.textContent = `${rows} × ${cols}`;
+  if (isSquare) item.classList.add('square-item');
+  item.textContent = isSquare ? `${rows} × ${cols} ⬛` : `${rows} × ${cols}`;
   discoveredList.appendChild(item);
 
-  flashHint(`Nice! ${rows} × ${cols} = ${currentProduct} ✓`);
+  flashHint(isSquare
+    ? `✨ A perfect square! ${rows} × ${cols} = ${currentProduct}`
+    : `Nice! ${rows} × ${cols} = ${currentProduct} ✓`
+  );
+
+  if (isSquare) triggerSquareCelebration(rows);
 
   buildHoldingArea(currentProduct);
 
   const stillRemaining = allFactorPairs.filter(p => !alreadyConfirmed(p.rows, p.cols));
   if (stillRemaining.length === 0) {
-    setTimeout(triggerCelebration, 800);
+    setTimeout(triggerCelebration, isSquare ? 2000 : 800);
   }
 }
 
-// ── "I Found Them All!" Button ──
-submitBtn.addEventListener('click', () => {
-  const stillRemaining = allFactorPairs.filter(p => !alreadyConfirmed(p.rows, p.cols));
-  if (stillRemaining.length === 0) {
-    triggerCelebration();
-  } else {
-    const hint = stillRemaining.map(p => `${p.rows} × ${p.cols}`).join(', ');
-    flashHint(`Not quite! You're still missing: ${hint} 🌿`);
-  }
-});
+// ── Square celebration popup ──
+function triggerSquareCelebration(size) {
+  const popup = document.createElement('div');
+  popup.classList.add('square-popup');
+  popup.innerHTML = `<span class="square-pop-icon">⬛</span><span class="square-pop-text">Perfect Square!<br>${size} × ${size}</span>`;
+  document.body.appendChild(popup);
+  setTimeout(() => popup.remove(), 2200);
+}
 
 // ── Hint Button ──
 hintBtn.addEventListener('click', () => {
   const stillRemaining = allFactorPairs.filter(p => !alreadyConfirmed(p.rows, p.cols));
   if (stillRemaining.length === 0) {
-    flashHint('You found them all! Hit the submit button! 🎉');
+    flashHint('You found them all! 🎉');
   } else {
-    const next = stillRemaining[0];
+    const next = stillRemaining.find(p => p.rows !== 1 && p.cols !== 1) || stillRemaining[0];
     flashHint(`Try making a rectangle with ${next.rows} rows and ${next.cols} columns 🌿`);
   }
 });
@@ -468,15 +553,25 @@ function triggerCelebration() {
   const icons = getThemeEmojis();
   celebrationIcons.textContent = icons.slice(0, 4).join(' ');
 
-  const titles   = ['Amazing!', 'Brilliant!', 'You did it!', 'Spectacular!'];
-  const messages = [
-    `You found all ${allFactorPairs.length} ways to arrange ${currentProduct}!`,
-    `Every single rectangle — you got them all!`,
-    `${currentProduct} has never looked so good!`
-  ];
+  const prime  = isPrime(currentProduct);
+  const square = isPerfectSquare(currentProduct);
 
+  const titles = ['Amazing!', 'Brilliant!', 'You did it!', 'Spectacular!'];
   celebrationTitle.textContent = titles[Math.floor(Math.random() * titles.length)];
-  celebrationMsg.textContent   = messages[Math.floor(Math.random() * messages.length)];
+
+  if (prime) {
+    celebrationMsg.textContent  = `${currentProduct} is a prime number — its only rectangles are 1 × ${currentProduct} and ${currentProduct} × 1!`;
+    celebrationExtra.textContent = '🔢 A prime number can only be divided evenly by 1 and itself. They\'re special!';
+    celebrationExtra.classList.remove('hidden');
+  } else if (square) {
+    celebrationMsg.textContent  = `You found all the rectangles for ${currentProduct} — including a perfect square!`;
+    celebrationExtra.textContent = `⬛ ${Math.sqrt(currentProduct)} × ${Math.sqrt(currentProduct)} = ${currentProduct} is a perfect square!`;
+    celebrationExtra.classList.remove('hidden');
+  } else {
+    celebrationMsg.textContent = `You found all ${allFactorPairs.length} rectangles for ${currentProduct}!`;
+    celebrationExtra.classList.add('hidden');
+  }
+
   celebrationScreen.classList.remove('hidden');
 }
 

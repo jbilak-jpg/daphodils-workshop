@@ -44,6 +44,7 @@
       <div class="celebration-icons" id="celebration-icons"></div>
       <h2 class="overlay-title" id="celebration-title">Amazing!</h2>
       <p class="overlay-subtitle" id="celebration-message"></p>
+      <p class="celebration-extra hidden" id="celebration-extra"></p>
       <button class="primary-btn" id="next-problem-btn">Next Problem →</button>
     </div>
   </div>
@@ -69,12 +70,16 @@
 
         <!-- PROBLEM DISPLAY -->
         <div class="problem-banner">
-          <div class="problem-text" id="problem-text">Find all the ways to arrange 12</div>
+          <div class="problem-banner-inner">
+            <span class="problem-label" id="problem-label">Find all rectangles for</span>
+            <span class="product-display" id="product-display">12</span>
+          </div>
           <div class="problem-hint" id="problem-hint"></div>
         </div>
 
-        <!-- GRAPH PAPER CANVAS -->
+        <!-- CANVAS ROW -->
         <div class="canvas-row">
+          <!-- holding area injected here by JS -->
           <div class="canvas-container">
             <div class="graph-paper" id="graph-paper"></div>
           </div>
@@ -83,8 +88,8 @@
         <!-- ACTION BUTTONS -->
         <div class="action-bar">
           <button class="secondary-btn" id="hint-btn">Need a hint? 🌿</button>
-          <button class="primary-btn" id="check-grid-btn">That's a grid! ✓</button>
-          <button class="primary-btn submit-btn" id="submit-btn">I found them all! 🎉</button>
+          <button class="freebie-btn" id="freebie-btn">Freebie: add 1 × n and n × 1 ✨</button>
+          <button class="primary-btn" id="check-grid-btn">That's a rectangle! ✓</button>
         </div>
 
       </div>
@@ -100,7 +105,7 @@
 
         <!-- DISCOVERED GRIDS -->
         <div class="discovered-section">
-          <div class="discovered-label">Grids found so far</div>
+          <div class="discovered-label">Rectangles found</div>
           <div class="discovered-list" id="discovered-list"></div>
         </div>
 

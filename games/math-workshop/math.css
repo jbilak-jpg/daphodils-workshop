@@ -46,6 +46,16 @@
   margin-bottom: 1.5rem;
 }
 
+.celebration-extra {
+  font-size: 0.9rem;
+  color: var(--purple-mid);
+  background: var(--purple-pale);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  margin: 0.75rem 0 1.25rem;
+  line-height: 1.5;
+}
+
 /* ── Theme Selector ── */
 .theme-grid {
   display: grid;
@@ -73,9 +83,7 @@
   transform: translateY(-2px);
 }
 
-.theme-icon {
-  font-size: 2.5rem;
-}
+.theme-icon { font-size: 2.5rem; }
 
 .theme-name {
   font-size: 0.9rem;
@@ -102,9 +110,7 @@
   transition: color 0.2s;
 }
 
-.nav-home:hover {
-  color: var(--cream);
-}
+.nav-home:hover { color: var(--cream); }
 
 .nav-center {
   display: flex;
@@ -170,20 +176,44 @@
   flex-shrink: 0;
 }
 
-.problem-text {
+.problem-banner-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.problem-label {
   font-family: var(--font-title);
-  font-size: 1.4rem;
+  font-size: 1.2rem;
+  color: var(--purple-light);
+  font-style: italic;
+}
+
+.product-display {
+  font-family: var(--font-title);
+  font-size: 3.5rem;
+  font-weight: 700;
   color: var(--cream);
+  background: rgba(155, 127, 212, 0.2);
+  border: 2px solid var(--purple-light);
+  border-radius: 12px;
+  padding: 0.1rem 1rem;
+  min-width: 5rem;
+  text-align: center;
+  line-height: 1.2;
+  transition: all 0.3s ease;
 }
 
 .problem-hint {
   font-size: 0.85rem;
   color: var(--accent-gold);
-  margin-top: 0.3rem;
+  margin-top: 0.5rem;
   min-height: 1.2em;
 }
 
-/* ── Canvas Row (holding area + graph paper side by side) ── */
+/* ── Canvas Row ── */
 .canvas-row {
   display: flex;
   flex: 1;
@@ -213,18 +243,16 @@
   font-size: 1.5rem;
   user-select: none;
   border-radius: 8px;
-  pointer-events: auto;
-  cursor: grab;
 }
 
 /* ── Graph Paper Container ── */
 .canvas-container {
   flex: 1;
-  -webkit-overflow-scrolling: touch;
   overflow: scroll;
   border-radius: 12px;
   border: 2px solid rgba(255,255,255,0.1);
   min-width: 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ── Graph Paper ── */
@@ -238,7 +266,7 @@
   cursor: pointer;
 }
 
-/* ── Individual graph cells (invisible, for click detection) ── */
+/* ── Graph Cells ── */
 .graph-cell {
   position: absolute;
   box-sizing: border-box;
@@ -274,7 +302,7 @@
   background: rgba(122, 158, 126, 0.2);
 }
 
-/* ── Confirmed Grid Border ── */
+/* ── Confirmed Border ── */
 .confirmed-border {
   position: absolute;
   border: 3px solid var(--accent-green);
@@ -283,6 +311,12 @@
   pointer-events: none;
   z-index: 4;
   animation: border-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.square-border {
+  border-color: var(--accent-gold);
+  background: rgba(201, 168, 76, 0.1);
+  box-shadow: 0 0 12px rgba(201, 168, 76, 0.4);
 }
 
 @keyframes border-pop {
@@ -333,6 +367,23 @@
   background: rgba(155, 127, 212, 0.1);
 }
 
+.freebie-btn {
+  background: rgba(201, 168, 76, 0.15);
+  color: var(--accent-gold);
+  border: 1px solid var(--accent-gold);
+  border-radius: 24px;
+  padding: 0.6rem 1.4rem;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.freebie-btn:hover {
+  background: rgba(201, 168, 76, 0.25);
+  transform: translateY(-2px);
+}
+
 /* ── Sidebar ── */
 .sidebar {
   width: 220px;
@@ -371,10 +422,8 @@
   font-style: italic;
 }
 
-/* ── Discovered Grids ── */
-.discovered-section {
-  flex: 1;
-}
+/* ── Discovered List ── */
+.discovered-section { flex: 1; }
 
 .discovered-label {
   font-size: 0.75rem;
@@ -401,6 +450,39 @@
   font-weight: 600;
 }
 
+.square-item {
+  border-left-color: var(--accent-gold);
+  background: rgba(201, 168, 76, 0.1);
+}
+
+/* ── Square Popup ── */
+.square-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--cream);
+  border: 2px solid var(--accent-gold);
+  border-radius: 16px;
+  padding: 1.25rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  z-index: 50;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  animation: pop-in 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+             fade-out 0.4s ease 1.8s forwards;
+}
+
+.square-pop-icon { font-size: 2rem; }
+
+.square-pop-text {
+  font-family: var(--font-title);
+  font-size: 1.1rem;
+  color: var(--purple-deep);
+  line-height: 1.4;
+}
+
 /* ── Celebration ── */
 .celebration-box {
   animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -409,6 +491,11 @@
 @keyframes pop-in {
   from { transform: scale(0.7); opacity: 0; }
   to   { transform: scale(1);   opacity: 1; }
+}
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; pointer-events: none; }
 }
 
 .celebration-icons {
@@ -423,7 +510,7 @@
   to   { transform: rotate(5deg) scale(1.1); }
 }
 
-/* ── Shake Animation ── */
+/* ── Shake ── */
 @keyframes shake {
   0%   { transform: translateX(0); }
   20%  { transform: translateX(-6px); }
@@ -433,6 +520,4 @@
   100% { transform: translateX(0); }
 }
 
-.shake {
-  animation: shake 0.5s ease;
-}
+.shake { animation: shake 0.5s ease; }
