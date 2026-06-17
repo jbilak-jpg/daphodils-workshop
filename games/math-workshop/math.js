@@ -25,9 +25,9 @@ const app               = document.getElementById('app');
 const modeLabel         = document.getElementById('mode-label');
 const modeSwitch        = document.getElementById('mode-switch');
 const scoreEl           = document.getElementById('session-score');
-const problemLabel      = document.getElementById('problem-label');
 const productDisplay    = document.getElementById('product-display');
 const problemHint       = document.getElementById('problem-hint');
+const progressLabel     = document.getElementById('progress-label');
 const graphPaper        = document.getElementById('graph-paper');
 const hintBtn           = document.getElementById('hint-btn');
 const checkGridBtn      = document.getElementById('check-grid-btn');
@@ -68,7 +68,7 @@ function isPerfectSquare(n) {
 }
 
 function pickProduct() {
-  return Math.floor(Math.random() * 99) + 2; // 2 to 100
+  return Math.floor(Math.random() * 99) + 2;
 }
 
 function cellKey(col, row) { return `${col},${row}`; }
@@ -82,6 +82,12 @@ function getThemeEmojis() { return THEMES[currentTheme]; }
 function randomEmoji() {
   const icons = getThemeEmojis();
   return icons[Math.floor(Math.random() * icons.length)];
+}
+
+function updateProgress() {
+  const found = confirmedGrids.length;
+  const total = allFactorPairs.length;
+  progressLabel.textContent = `${found} of ${total} rectangle${total !== 1 ? 's' : ''} found`;
 }
 
 // ── Theme Selection ──
@@ -118,6 +124,8 @@ function startNewProblem() {
   productDisplay.textContent = currentProduct;
   problemHint.textContent    = '';
   discoveredList.innerHTML   = '';
+
+  updateProgress();
 
   const fact = (window.FACTS && window.FACTS[currentProduct])
     ? window.FACTS[currentProduct]
@@ -180,11 +188,11 @@ function placeIconOnGrid(emoji, col, row) {
 
   const icon = document.createElement('div');
   icon.classList.add('grid-icon', 'placed');
-  icon.textContent        = emoji;
-  icon.style.left         = `${col * CELL_SIZE}px`;
-  icon.style.top          = `${row * CELL_SIZE}px`;
-  icon.style.position     = 'absolute';
-  icon.style.zIndex       = '3';
+  icon.textContent         = emoji;
+  icon.style.left          = `${col * CELL_SIZE}px`;
+  icon.style.top           = `${row * CELL_SIZE}px`;
+  icon.style.position      = 'absolute';
+  icon.style.zIndex        = '3';
   icon.style.pointerEvents = 'none';
 
   placedIcons[key] = { element: icon, confirmed: false };
@@ -329,22 +337,20 @@ function createFloater(emoji, clientX, clientY) {
   return floater;
 }
 
-// ── Freebie Button — auto-confirm 1×n and n×1 ──
+// ── Freebie Button ──
 freebieBtn.addEventListener('click', () => {
   autoConfirmRect(1, currentProduct);
   autoConfirmRect(currentProduct, 1);
-
+  updateProgress();
   const stillRemaining = allFactorPairs.filter(p => !alreadyConfirmed(p.rows, p.cols));
-  if (stillRemaining.length === 0) {
-    setTimeout(triggerCelebration, 800);
-  }
+  if (stillRemaining.length === 0) setTimeout(triggerCelebration, 800);
 });
 
-// ── Auto-confirm a rectangle without placing icons manually ──
+// ── Auto-confirm a rectangle ──
 function autoConfirmRect(rows, cols) {
   if (alreadyConfirmed(rows, cols)) return;
 
-  const emoji = randomEmoji();
+  const emoji    = randomEmoji();
   const startCol = findFreeStartCol(rows, cols);
   if (startCol === null) return;
 
@@ -356,11 +362,11 @@ function autoConfirmRect(rows, cols) {
 
       const icon = document.createElement('div');
       icon.classList.add('grid-icon', 'confirmed');
-      icon.textContent        = emoji;
-      icon.style.left         = `${col * CELL_SIZE}px`;
-      icon.style.top          = `${r * CELL_SIZE}px`;
-      icon.style.position     = 'absolute';
-      icon.style.zIndex       = '3';
+      icon.textContent         = emoji;
+      icon.style.left          = `${col * CELL_SIZE}px`;
+      icon.style.top           = `${r * CELL_SIZE}px`;
+      icon.style.position      = 'absolute';
+      icon.style.zIndex        = '3';
       icon.style.pointerEvents = 'none';
       graphPaper.appendChild(icon);
       placedIcons[key] = { element: icon, confirmed: true };
@@ -378,16 +384,11 @@ function autoConfirmRect(rows, cols) {
   graphPaper.appendChild(border);
 
   confirmedGrids.push({ rows, cols });
-
-  const item = document.createElement('div');
-  item.classList.add('discovered-item');
-  item.textContent = `${rows} × ${cols}`;
-  discoveredList.appendChild(item);
-
+  addSidebarItem(rows, cols, false);
   buildHoldingArea(currentProduct);
 }
 
-// ── Find a free starting column for an auto-rect ──
+// ── Find a free starting column for auto-rect ──
 function findFreeStartCol(rows, cols) {
   for (let startCol = 0; startCol + cols <= GRID_COLS; startCol++) {
     let free = true;
@@ -402,6 +403,47 @@ function findFreeStartCol(rows, cols) {
     if (free) return startCol;
   }
   return null;
+}
+
+// ── Add item to sidebar ──
+function addSidebarItem(rows, cols, allowFlip) {
+  const isSquare = rows === cols;
+  const wrapper  = document.createElement('div');
+  wrapper.classList.add('discovered-item-wrapper');
+  wrapper.dataset.rows = rows;
+  wrapper.dataset.cols = cols;
+
+  const item = document.createElement('div');
+  item.classList.add('discovered-item');
+  if (isSquare) item.classList.add('square-item');
+  item.textContent = isSquare ? `${rows} × ${cols} ⬛` : `${rows} × ${cols}`;
+
+  wrapper.appendChild(item);
+
+  // Add flip button if the pair is different and not already confirmed
+  if (allowFlip && rows !== cols && !alreadyConfirmed(cols, rows)) {
+    const flipBtn = document.createElement('button');
+    flipBtn.classList.add('flip-btn');
+    flipBtn.textContent = `↔ Flip to ${cols} × ${rows}`;
+    flipBtn.addEventListener('click', () => {
+      confirmedGrids.push({ rows: cols, cols: rows });
+      flipBtn.remove();
+
+      const flippedItem = document.createElement('div');
+      flippedItem.classList.add('discovered-item', 'flipped-item');
+      flippedItem.textContent = `${cols} × ${rows} ↔`;
+      wrapper.appendChild(flippedItem);
+
+      updateProgress();
+      flashHint(`Nice! ${cols} × ${rows} is the flip of ${rows} × ${cols} ↔`);
+
+      const stillRemaining = allFactorPairs.filter(p => !alreadyConfirmed(p.rows, p.cols));
+      if (stillRemaining.length === 0) setTimeout(triggerCelebration, 800);
+    });
+    wrapper.appendChild(flipBtn);
+  }
+
+  discoveredList.appendChild(wrapper);
 }
 
 // ── Check rectangle ──
@@ -431,7 +473,7 @@ function getPlacedRectangle() {
   return { rows: height, cols: width, minCol, minRow, maxCol, maxRow };
 }
 
-// ── "That's a Grid!" Button ──
+// ── "That's a Rectangle!" Button ──
 checkGridBtn.addEventListener('click', () => {
   const rect = getPlacedRectangle();
 
@@ -451,7 +493,7 @@ checkGridBtn.addEventListener('click', () => {
   }
 
   if (alreadyConfirmed(rows, cols)) {
-    flashHint(`You already found a ${rows} × ${cols} grid! Try a different shape. ✨`);
+    flashHint(`You already found a ${rows} × ${cols} rectangle! Try a different shape. ✨`);
     shakeCanvas();
     return;
   }
@@ -489,17 +531,16 @@ function confirmGrid(rect) {
   graphPaper.appendChild(border);
 
   confirmedGrids.push({ rows, cols });
+  addSidebarItem(rows, cols, true);
+  updateProgress();
 
-  const item = document.createElement('div');
-  item.classList.add('discovered-item');
-  if (isSquare) item.classList.add('square-item');
-  item.textContent = isSquare ? `${rows} × ${cols} ⬛` : `${rows} × ${cols}`;
-  discoveredList.appendChild(item);
+  // Show rotation label briefly
+  showRotationLabel(rows, cols, minCol, minRow);
 
-  flashHint(isSquare
+  const hintMsg = isSquare
     ? `✨ A perfect square! ${rows} × ${cols} = ${currentProduct}`
-    : `Nice! ${rows} × ${cols} = ${currentProduct} ✓`
-  );
+    : `Nice! ${rows} rows × ${cols} columns = ${currentProduct} ✓`;
+  flashHint(hintMsg);
 
   if (isSquare) triggerSquareCelebration(rows);
 
@@ -509,6 +550,17 @@ function confirmGrid(rect) {
   if (stillRemaining.length === 0) {
     setTimeout(triggerCelebration, isSquare ? 2000 : 800);
   }
+}
+
+// ── Show rotation label briefly on canvas ──
+function showRotationLabel(rows, cols, minCol, minRow) {
+  const label = document.createElement('div');
+  label.classList.add('rotation-label');
+  label.textContent = `${rows} rows × ${cols} columns`;
+  label.style.left = `${minCol * CELL_SIZE}px`;
+  label.style.top  = `${Math.max(0, minRow * CELL_SIZE - 28)}px`;
+  graphPaper.appendChild(label);
+  setTimeout(() => label.remove(), 2500);
 }
 
 // ── Square celebration popup ──
@@ -560,11 +612,11 @@ function triggerCelebration() {
   celebrationTitle.textContent = titles[Math.floor(Math.random() * titles.length)];
 
   if (prime) {
-    celebrationMsg.textContent  = `${currentProduct} is a prime number — its only rectangles are 1 × ${currentProduct} and ${currentProduct} × 1!`;
+    celebrationMsg.textContent   = `${currentProduct} is a prime number — its only rectangles are 1 × ${currentProduct} and ${currentProduct} × 1!`;
     celebrationExtra.textContent = '🔢 A prime number can only be divided evenly by 1 and itself. They\'re special!';
     celebrationExtra.classList.remove('hidden');
   } else if (square) {
-    celebrationMsg.textContent  = `You found all the rectangles for ${currentProduct} — including a perfect square!`;
+    celebrationMsg.textContent   = `You found all the rectangles for ${currentProduct} — including a perfect square!`;
     celebrationExtra.textContent = `⬛ ${Math.sqrt(currentProduct)} × ${Math.sqrt(currentProduct)} = ${currentProduct} is a perfect square!`;
     celebrationExtra.classList.remove('hidden');
   } else {

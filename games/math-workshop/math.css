@@ -521,3 +521,61 @@
 }
 
 .shake { animation: shake 0.5s ease; }
+
+/* ── Progress Label ── */
+.problem-progress {
+  font-size: 0.82rem;
+  color: var(--purple-light);
+  margin-top: 0.3rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+/* ── Sidebar Item Wrapper ── */
+.discovered-item-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+/* ── Flip Button ── */
+.flip-btn {
+  background: rgba(155, 127, 212, 0.12);
+  color: var(--purple-light);
+  border: 1px dashed var(--purple-light);
+  border-radius: 8px;
+  padding: 0.3rem 0.6rem;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.flip-btn:hover {
+  background: rgba(155, 127, 212, 0.25);
+  color: var(--cream);
+}
+
+/* ── Flipped Item ── */
+.flipped-item {
+  border-left-color: var(--purple-light);
+  color: var(--purple-light);
+  font-style: italic;
+}
+
+/* ── Rotation Label on Canvas ── */
+.rotation-label {
+  position: absolute;
+  background: var(--purple-mid);
+  color: var(--cream);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  z-index: 10;
+  pointer-events: none;
+  white-space: nowrap;
+  animation: fade-out 0.4s ease 2.1s forwards;
+}
