@@ -664,74 +664,68 @@
   stroke-linejoin: round;
 }
 
-/* Fence groups */
-.fence-group {
+/* Fence path — the actual drawn lasso shape kept as a permanent blob */
+.fence-path {
+  fill: rgba(201, 168, 76, 0.13);
+  stroke: var(--accent-gold);
+  stroke-width: 3;
+  stroke-dasharray: 9 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+  animation: fence-path-in 0.25s ease both;
+}
+
+.fence-path.fence-confirmed {
+  fill: rgba(122, 158, 126, 0.28);
+  stroke: var(--accent-green);
+  stroke-dasharray: 0;
+}
+
+@keyframes fence-path-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Thin overlay just for badge + break button — no background, doesn't block lasso */
+.fence-overlay {
   position: absolute;
-  border: 3px dashed var(--accent-gold);
-  border-radius: 16px;
-  background: rgba(201, 168, 76, 0.1);
-  z-index: 6;
-  animation: fence-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 8;
+  pointer-events: none;
 }
 
-.fence-group:hover {
-  background: rgba(201, 168, 76, 0.18);
-}
-
-.fence-group.fence-confirmed {
-  border-color: var(--accent-green);
-  background: rgba(122, 158, 126, 0.22);
-  border-style: solid;
-  animation: fence-confirm 0.4s ease;
-}
-
-@keyframes fence-in {
-  from { transform: scale(0.88); opacity: 0; }
-  to   { transform: scale(1);    opacity: 1; }
-}
-
-@keyframes fence-confirm {
-  0%   { transform: scale(1);    }
-  40%  { transform: scale(1.04); }
-  100% { transform: scale(1);    }
-}
-
-/* Icon count badge on fence */
+/* Icon count badge */
 .fence-label {
-  position: absolute;
-  top: 6px;
-  left: 8px;
   background: var(--accent-gold);
   color: var(--purple-deep);
   font-family: var(--font-body);
   font-size: 0.7rem;
   font-weight: 700;
-  padding: 0.1rem 0.4rem;
+  padding: 0.1rem 0.45rem;
   border-radius: 20px;
   pointer-events: none;
-  z-index: 7;
+  white-space: nowrap;
 }
 
-/* Break button on fence */
+/* Break button */
 .fence-break-btn {
-  position: absolute;
-  top: 4px;
-  right: 6px;
-  background: rgba(93, 60, 143, 0.75);
+  background: rgba(93, 60, 143, 0.82);
   color: var(--cream);
   border: none;
   border-radius: 50%;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   font-size: 0.6rem;
-  line-height: 1;
   cursor: pointer;
-  z-index: 9;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: background 0.15s;
+  pointer-events: auto;
+  flex-shrink: 0;
 }
 
 .fence-break-btn:hover {

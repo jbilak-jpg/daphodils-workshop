@@ -693,7 +693,9 @@ function startDivisionProblem() {
   updateDivisionProgress();
 
   const field = document.getElementById('division-field');
+  const svg   = document.getElementById('lasso-svg');
   [...field.children].forEach(c => { if (c.id !== 'lasso-svg') c.remove(); });
+  [...svg.children].forEach(c => { if (c.id !== 'lasso-path') c.remove(); });
 
   if (!divLassoSetup) {
     setupDivisionLasso();
@@ -760,7 +762,8 @@ function setupDivisionLasso() {
   }
 
   function updatePath() {
-    const d = lassoPoints.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`).join(' ') + ' Z';
+    // No Z while drawing — prevents a straight line snapping to the start
+    const d = lassoPoints.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`).join(' ');
     lassoEl.setAttribute('d', d);
     divIcons.forEach(icon => {
       if (icon.groupId !== null) return;
@@ -776,9 +779,10 @@ function setupDivisionLasso() {
     const enclosed = divIcons.filter(i =>
       i.groupId === null && pointInPolygon({ x: i.x, y: i.y }, lassoPoints)
     );
+    const capturedPath = lassoPoints.slice();
     lassoPoints = [];
     if (enclosed.length > 0) {
-      createDivGroup(enclosed);
+      createDivGroup(enclosed, capturedPath);
     } else {
       flashHint('Draw your lasso around some icons to make a group! 🌿');
     }
@@ -786,7 +790,7 @@ function setupDivisionLasso() {
 
   // ── Mouse (desktop): document-level move/up so dragging outside the field still works ──
   field.addEventListener('mousedown', e => {
-    if (e.target.closest('.fence-group')) return;
+    if (e.target.closest('.fence-break-btn')) return;
     e.preventDefault();
     isDrawingLasso = true;
     lassoPoints    = [];
@@ -811,7 +815,7 @@ function setupDivisionLasso() {
 
   // ── Touch (iPad): touchmove fires on the original element automatically ──
   field.addEventListener('touchstart', e => {
-    if (e.target.closest('.fence-group')) return;
+    if (e.target.closest('.fence-break-btn')) return;
     e.preventDefault();
     isDrawingLasso = true;
     lassoPoints    = [];
@@ -849,42 +853,50 @@ function pointInPolygon(point, polygon) {
   return inside;
 }
 
-// ── Division: create a fence group ──
-function createDivGroup(icons) {
+// ── Division: create a fence group (SVG blob shape, not a rectangle) ──
+function createDivGroup(icons, pathPoints) {
   const groupId = divNextGid++;
   icons.forEach(icon => { icon.groupId = groupId; });
 
-  const pad  = 18;
+  // Keep the drawn lasso shape as the fence — add it as a permanent SVG path
+  const svg       = document.getElementById('lasso-svg');
+  const fencePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  fencePath.classList.add('fence-path');
+  fencePath.dataset.groupId = groupId;
+  const d = pathPoints.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`).join(' ') + ' Z';
+  fencePath.setAttribute('d', d);
+  svg.insertBefore(fencePath, svg.firstChild); // behind the active lasso path
+
+  // Thin overlay div just for the badge + break button, floating near the top of the bounding box
   const size = 40;
   const xs   = icons.map(i => i.x);
   const ys   = icons.map(i => i.y);
-  const x1   = Math.min(...xs) - size / 2 - pad;
-  const y1   = Math.min(...ys) - size / 2 - pad;
-  const x2   = Math.max(...xs) + size / 2 + pad;
-  const y2   = Math.max(...ys) + size / 2 + pad;
+  const minX = Math.min(...xs) - size / 2;
+  const minY = Math.min(...ys) - size / 2;
+  const maxX = Math.max(...xs) + size / 2;
 
-  const fence = document.createElement('div');
-  fence.classList.add('fence-group');
-  fence.dataset.groupId = groupId;
-  fence.style.left   = `${x1}px`;
-  fence.style.top    = `${y1}px`;
-  fence.style.width  = `${x2 - x1}px`;
-  fence.style.height = `${y2 - y1}px`;
+  const overlay = document.createElement('div');
+  overlay.classList.add('fence-overlay');
+  overlay.dataset.groupId = groupId;
+  overlay.style.left  = `${minX + 6}px`;
+  overlay.style.top   = `${minY + 6}px`;
+  overlay.style.width = `${maxX - minX - 12}px`;
 
   const label = document.createElement('div');
   label.classList.add('fence-label');
   label.textContent = icons.length;
-  fence.appendChild(label);
+  overlay.appendChild(label);
 
   const breakBtn = document.createElement('button');
   breakBtn.classList.add('fence-break-btn');
   breakBtn.textContent = '✕';
-  breakBtn.title = 'Break this group';
+  breakBtn.addEventListener('mousedown', e => e.stopPropagation());
+  breakBtn.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
   breakBtn.addEventListener('click', e => { e.stopPropagation(); breakDivGroup(groupId); });
-  fence.appendChild(breakBtn);
+  overlay.appendChild(breakBtn);
 
-  document.getElementById('division-field').appendChild(fence);
-  divGroups.push({ id: groupId, iconIds: icons.map(i => i.id), el: fence });
+  document.getElementById('division-field').appendChild(overlay);
+  divGroups.push({ id: groupId, iconIds: icons.map(i => i.id), fencePath, overlay });
 
   updateDivisionProgress();
 }
@@ -893,7 +905,8 @@ function createDivGroup(icons) {
 function breakDivGroup(groupId) {
   const group = divGroups.find(g => g.id === groupId);
   if (!group) return;
-  group.el.remove();
+  group.fencePath.remove();
+  group.overlay.remove();
   divGroups = divGroups.filter(g => g.id !== groupId);
   divIcons.forEach(icon => { if (icon.groupId === groupId) icon.groupId = null; });
   updateDivisionProgress();
@@ -998,12 +1011,14 @@ document.getElementById('check-groups-btn').addEventListener('click', () => {
   flashHint(`${quotient} equal group${quotient !== 1 ? 's' : ''} of ${divisor} — that's ${currentProduct} ÷ ${divisor} = ${quotient} ✓`);
 
   // Flash fences green then reset field
-  divGroups.forEach(g => g.el.classList.add('fence-confirmed'));
+  divGroups.forEach(g => g.fencePath.classList.add('fence-confirmed'));
   setTimeout(() => {
     divGroups     = [];
     divIcons      = [];
     const field   = document.getElementById('division-field');
+    const svg     = document.getElementById('lasso-svg');
     [...field.children].forEach(c => { if (c.id !== 'lasso-svg') c.remove(); });
+    [...svg.children].forEach(c => { if (c.id !== 'lasso-path') c.remove(); });
     updateDivisionProgress();
     const remaining = allFactorPairs.filter(p => !alreadyConfirmedDiv(p.rows, p.cols));
     if (remaining.length === 0) {
