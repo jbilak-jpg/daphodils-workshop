@@ -60,20 +60,20 @@ function arrowContent(state) {
 }
 
 // ── App state ──
-var bpm            = 80;
-var measures       = [newMeasure(), newMeasure()];
-var playing        = false;
-var visualOffsetMs = 0; // positive = visual fires later (compensates for output latency)
+var bpm      = 80;
+var measures = [newMeasure(), newMeasure()];
+var playing  = false;
 
 // Audio
-var audioCtx      = null;
-var masterGain    = null;
-var downBuf       = null;
-var upBuf         = null;
-var schedTimer    = null;
-var nextTime      = 0;
-var schedBeat     = 0;
-var pendingVisual = []; // setTimeout IDs for beat-highlight updates
+var audioCtx   = null;
+var masterGain = null;
+var downBuf    = null;
+var upBuf      = null;
+
+// RAF playback state
+var rafHandle    = null;
+var lastBeatFired = -1;
+var playStartWall = 0; // performance.now() when play began
 
 var downArr = null;
 var upArr   = null;
@@ -235,17 +235,11 @@ async function initAudio() {
   if (downArr) downBuf = await audioCtx.decodeAudioData(downArr.slice(0));
   if (upArr)   upBuf   = await audioCtx.decodeAudioData(upArr.slice(0));
 
-  // iOS warmup: play a silent buffer to initialize the audio hardware pipeline
-  // so the first real note doesn't arrive late
+  // iOS warmup: prime the audio pipeline so the first real note isn't late
   var warmup = audioCtx.createBufferSource();
   warmup.buffer = audioCtx.createBuffer(1, 1, audioCtx.sampleRate);
   warmup.connect(audioCtx.destination);
   warmup.start(audioCtx.currentTime);
-
-  // Seed the sync offset from whatever latency info the browser exposes.
-  // outputLatency is available in Chrome/Firefox but not iOS Safari.
-  var detected = Math.round(((audioCtx.outputLatency || 0) + (audioCtx.baseLatency || 0)) * 1000);
-  if (detected > 0) setSync(detected);
 }
 
 function playNote(buf, time) {
@@ -272,31 +266,26 @@ function highlightBeat(mi, bi) {
   if (el) el.classList.add('playing');
 }
 
-function scheduler() {
-  var spe   = (60 / bpm) / 2;
+// ── RAF playback loop ──
+// Visual and audio both fire together inside each frame — no scheduling gap.
+function rafLoop(now) {
+  if (!playing) { rafHandle = null; return; }
+  var spe   = (60 / bpm) / 2 * 1000; // ms per 8th note
   var total = measures.length * BEATS;
-  while (nextTime < audioCtx.currentTime + 0.12) {
-    var slot = schedBeat % total;
+  var beat  = Math.floor((now - playStartWall) / spe);
+
+  if (beat !== lastBeatFired) {
+    lastBeatFired = beat;
+    var slot = beat % total;
     var mi   = Math.floor(slot / BEATS);
     var bi   = slot % BEATS;
     var s    = measures[mi] && measures[mi].beats[bi];
-    if      (s === 'down') playNote(downBuf, nextTime);
-    else if (s === 'up')   playNote(upBuf,   nextTime);
-
-    // Schedule the visual highlight; visualOffsetMs lets user dial out device latency
-    (function(m, b, t) {
-      var delayMs = Math.max(0, (t - audioCtx.currentTime) * 1000 + visualOffsetMs);
-      var tid = setTimeout(function() {
-        if (!playing) return;
-        highlightBeat(m, b);
-      }, delayMs);
-      pendingVisual.push(tid);
-    })(mi, bi, nextTime);
-
-    nextTime += spe;
-    schedBeat++;
+    if      (s === 'down') playNote(downBuf, audioCtx.currentTime + 0.005);
+    else if (s === 'up')   playNote(upBuf,   audioCtx.currentTime + 0.005);
+    highlightBeat(mi, bi);
   }
-  schedTimer = setTimeout(scheduler, 20);
+
+  rafHandle = requestAnimationFrame(rafLoop);
 }
 
 async function startPlay() {
@@ -306,33 +295,24 @@ async function startPlay() {
   masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
   masterGain.gain.setValueAtTime(1, audioCtx.currentTime);
 
-  playing   = true;
-  schedBeat = 0;
-  nextTime  = audioCtx.currentTime + 0.1;
+  playing       = true;
+  lastBeatFired = -1;
+  playStartWall = performance.now();
+  rafHandle     = requestAnimationFrame(rafLoop);
 
   document.getElementById('play-btn').textContent = '■  Stop';
   document.getElementById('play-btn').classList.add('is-playing');
-
-  scheduler();
 }
 
 function stopPlay() {
   playing = false;
-  clearTimeout(schedTimer);
-  pendingVisual.forEach(clearTimeout);
-  pendingVisual = [];
+  if (rafHandle) { cancelAnimationFrame(rafHandle); rafHandle = null; }
   if (masterGain) masterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.07);
   document.querySelectorAll('.beat-slot.playing').forEach(function(el) {
     el.classList.remove('playing');
   });
   document.getElementById('play-btn').textContent = '▶  Play';
   document.getElementById('play-btn').classList.remove('is-playing');
-}
-
-// ── Sync offset ──
-function setSync(v) {
-  visualOffsetMs = Math.max(-500, Math.min(500, v));
-  document.getElementById('sync-val').textContent = visualOffsetMs;
 }
 
 // ── BPM — stop/restart on change so audio & visual stay in sync ──
@@ -391,9 +371,6 @@ document.getElementById('load-input').addEventListener('change', function(e) {
   };
   reader.readAsText(file);
 });
-document.getElementById('sync-up').addEventListener('click', function() { setSync(visualOffsetMs + 50); });
-document.getElementById('sync-dn').addEventListener('click', function() { setSync(visualOffsetMs - 50); });
-
 document.getElementById('print-btn').addEventListener('click', function() {
   var was = playing;
   if (was) stopPlay();
