@@ -280,7 +280,7 @@ function scheduler() {
 
     // Schedule the visual highlight; visualOffsetMs lets user dial out device latency
     (function(m, b, t) {
-      var delayMs = Math.max(0, (t - audioCtx.currentTime) * 1000 - visualOffsetMs);
+      var delayMs = Math.max(0, (t - audioCtx.currentTime) * 1000 + visualOffsetMs);
       var tid = setTimeout(function() {
         if (!playing) return;
         highlightBeat(m, b);
