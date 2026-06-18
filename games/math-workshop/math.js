@@ -761,20 +761,27 @@ function setupDivisionLasso() {
     return { x: clientX - r.left, y: clientY - r.top };
   }
 
+  const counterEl = document.getElementById('lasso-counter');
+
   function updatePath() {
     // No Z while drawing — prevents a straight line snapping to the start
     const d = lassoPoints.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`).join(' ');
     lassoEl.setAttribute('d', d);
+    let n = 0;
     divIcons.forEach(icon => {
       if (icon.groupId !== null) return;
-      icon.el.classList.toggle('lasso-hover', pointInPolygon({ x: icon.x, y: icon.y }, lassoPoints));
+      const inside = pointInPolygon({ x: icon.x, y: icon.y }, lassoPoints);
+      icon.el.classList.toggle('lasso-hover', inside);
+      if (inside) n++;
     });
+    counterEl.textContent = n;
   }
 
   function finishLasso() {
     isDrawingLasso = false;
     lassoEl.style.display = 'none';
     lassoEl.setAttribute('d', '');
+    counterEl.style.display = 'none';
     divIcons.forEach(i => i.el.classList.remove('lasso-hover'));
     const enclosed = divIcons.filter(i =>
       i.groupId === null && pointInPolygon({ x: i.x, y: i.y }, lassoPoints)
@@ -798,6 +805,8 @@ function setupDivisionLasso() {
     lassoPoints.push(p);
     lassoEl.setAttribute('d', `M ${p.x} ${p.y}`);
     lassoEl.style.display = 'block';
+    counterEl.textContent = '0';
+    counterEl.style.display = 'flex';
 
     function onMouseMove(e) {
       if (!isDrawingLasso) return;
@@ -824,6 +833,8 @@ function setupDivisionLasso() {
     lassoPoints.push(p);
     lassoEl.setAttribute('d', `M ${p.x} ${p.y}`);
     lassoEl.style.display = 'block';
+    counterEl.textContent = '0';
+    counterEl.style.display = 'flex';
   }, { passive: false });
 
   field.addEventListener('touchmove', e => {

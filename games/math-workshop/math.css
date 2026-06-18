@@ -664,6 +664,33 @@
   stroke-linejoin: round;
 }
 
+/* Live lasso counter badge */
+.lasso-counter {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  z-index: 12;
+  background: var(--accent-gold);
+  color: #2d1b4e;
+  font-family: var(--font-body);
+  font-size: 1.5rem;
+  font-weight: 800;
+  min-width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.5rem;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.35);
+  pointer-events: none;
+  animation: counter-pop 0.12s ease-out both;
+}
+@keyframes counter-pop {
+  from { transform: scale(0.7); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
 /* Fence path — the actual drawn lasso shape kept as a permanent blob */
 .fence-path {
   fill: rgba(201, 168, 76, 0.13);
