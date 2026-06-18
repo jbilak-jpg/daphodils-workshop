@@ -270,6 +270,9 @@ function highlightBeat(mi, bi) {
 // Visual and audio both fire together inside each frame — no scheduling gap.
 function rafLoop(now) {
   if (!playing) { rafHandle = null; return; }
+  // Anchor playStartWall to the RAF timestamp on the very first frame so both
+  // values live in the same DOMHighResTimeStamp domain (avoids iOS clock skew).
+  if (playStartWall === 0) playStartWall = now;
   var spe   = (60 / bpm) / 2 * 1000; // ms per 8th note
   var total = measures.length * BEATS;
   var beat  = Math.floor((now - playStartWall) / spe);
@@ -297,7 +300,7 @@ async function startPlay() {
 
   playing       = true;
   lastBeatFired = -1;
-  playStartWall = performance.now();
+  playStartWall = 0; // set on first RAF frame to stay in the same timestamp domain
   rafHandle     = requestAnimationFrame(rafLoop);
 
   document.getElementById('play-btn').textContent = '■  Stop';
