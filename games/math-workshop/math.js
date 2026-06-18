@@ -15,6 +15,15 @@ let confirmedGrids = [];
 let allFactorPairs = [];
 let placedIcons    = {};
 
+// ── Division State ──
+let confirmedDivs   = [];   // [{divisor, quotient}]
+let divIcons        = [];   // [{id, emoji, x, y, el, groupId}]
+let divGroups       = [];   // [{id, iconIds, el}]
+let divNextGid      = 1;
+let isDrawingLasso  = false;
+let lassoPoints     = [];
+let divLassoSetup   = false;
+
 // ── Touch detection ──
 const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
@@ -34,6 +43,7 @@ const checkGridBtn      = document.getElementById('check-grid-btn');
 const freebieBtn        = document.getElementById('freebie-btn');
 const factText          = document.getElementById('fact-text');
 const discoveredList    = document.getElementById('discovered-list');
+const discoveredLabel   = document.getElementById('discovered-label');
 const nextProblemBtn    = document.getElementById('next-problem-btn');
 const celebrationTitle  = document.getElementById('celebration-title');
 const celebrationMsg    = document.getElementById('celebration-message');
@@ -102,35 +112,64 @@ document.querySelectorAll('.theme-btn').forEach(btn => {
 
 // ── Mode Switch ──
 modeSwitch.addEventListener('click', () => {
-  if (currentMode === 'multiplication') {
-    currentMode = 'division';
-    modeLabel.textContent = 'Division';
-    modeSwitch.textContent = 'Multiplication';
-  } else {
-    currentMode = 'multiplication';
-    modeLabel.textContent = 'Multiplication';
-    modeSwitch.textContent = 'Division';
-  }
+  currentMode = (currentMode === 'multiplication') ? 'division' : 'multiplication';
   startNewProblem();
 });
+
+// ── Show/hide mode UI ──
+function showMultiplicationUI() {
+  document.getElementById('mult-display').classList.remove('hidden');
+  document.getElementById('div-display').classList.add('hidden');
+  document.getElementById('mult-canvas-row').classList.remove('hidden');
+  document.getElementById('div-canvas-row').classList.add('hidden');
+  document.getElementById('mult-action-bar').classList.remove('hidden');
+  document.getElementById('div-action-bar').classList.add('hidden');
+  discoveredLabel.textContent  = 'Rectangles found';
+  modeLabel.textContent        = 'Multiplication';
+  modeSwitch.textContent       = 'Division';
+  currentMode                  = 'multiplication';
+}
+
+function showDivisionUI() {
+  document.getElementById('mult-display').classList.add('hidden');
+  document.getElementById('div-display').classList.remove('hidden');
+  document.getElementById('mult-canvas-row').classList.add('hidden');
+  document.getElementById('div-canvas-row').classList.remove('hidden');
+  document.getElementById('mult-action-bar').classList.add('hidden');
+  document.getElementById('div-action-bar').classList.remove('hidden');
+  discoveredLabel.textContent  = 'Equal groups found';
+  modeLabel.textContent        = 'Division';
+  modeSwitch.textContent       = 'Multiplication';
+  currentMode                  = 'division';
+}
 
 // ── Start a New Problem ──
 function startNewProblem() {
   currentProduct = pickProduct();
-  confirmedGrids = [];
-  placedIcons    = {};
   allFactorPairs = getFactorPairs(currentProduct);
-
-  productDisplay.textContent = currentProduct;
-  problemHint.textContent    = '';
-  discoveredList.innerHTML   = '';
-
-  updateProgress();
+  discoveredList.innerHTML = '';
+  problemHint.textContent  = '';
 
   const fact = (window.FACTS && window.FACTS[currentProduct])
     ? window.FACTS[currentProduct]
     : `${currentProduct} is a wonderful number!`;
   factText.textContent = fact;
+
+  if (currentMode === 'division') {
+    showDivisionUI();
+    startDivisionProblem();
+  } else {
+    showMultiplicationUI();
+    startMultiplicationProblem();
+  }
+}
+
+function startMultiplicationProblem() {
+  confirmedGrids = [];
+  placedIcons    = {};
+
+  productDisplay.textContent = currentProduct;
+  updateProgress();
 
   graphPaper.innerHTML = '';
   buildGraphPaperCells();
@@ -632,3 +671,396 @@ nextProblemBtn.addEventListener('click', () => {
   celebrationScreen.classList.add('hidden');
   startNewProblem();
 });
+
+
+// ════════════════════════════════════════════════════════
+// ── DIVISION MODE ──
+// ════════════════════════════════════════════════════════
+
+// ── Division: utility ──
+function alreadyConfirmedDiv(divisor, quotient) {
+  return confirmedDivs.some(d => d.divisor === divisor && d.quotient === quotient);
+}
+
+// ── Division: start problem ──
+function startDivisionProblem() {
+  confirmedDivs = [];
+  divGroups     = [];
+  divIcons      = [];
+  divNextGid    = 1;
+
+  document.getElementById('div-dividend-el').textContent = currentProduct;
+  updateDivisionProgress();
+
+  const field = document.getElementById('division-field');
+  [...field.children].forEach(c => { if (c.id !== 'lasso-svg') c.remove(); });
+
+  if (!divLassoSetup) {
+    setupDivisionLasso();
+    divLassoSetup = true;
+  }
+
+  requestAnimationFrame(() => scatterDivisionIcons());
+}
+
+// ── Division: scatter icons on the field ──
+function scatterDivisionIcons() {
+  const field = document.getElementById('division-field');
+  const fw    = field.clientWidth  || 600;
+  const fh    = field.clientHeight || 380;
+  const size  = 40;
+  const pad   = 52;
+  const n     = currentProduct;
+
+  const aspect = fw / fh;
+  const cols   = Math.max(2, Math.round(Math.sqrt(n * aspect)));
+  const rows   = Math.ceil(n / cols);
+  const cellW  = (fw - 2 * pad) / cols;
+  const cellH  = (fh - 2 * pad) / rows;
+
+  const positions = [];
+  outer: for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (positions.length >= n) break outer;
+      const cx = pad + (c + 0.5) * cellW;
+      const cy = pad + (r + 0.5) * cellH;
+      const jx = (Math.random() - 0.5) * cellW * 0.55;
+      const jy = (Math.random() - 0.5) * cellH * 0.55;
+      positions.push({
+        x: Math.max(pad, Math.min(fw - pad - size, cx + jx - size / 2)),
+        y: Math.max(pad, Math.min(fh - pad - size, cy + jy - size / 2))
+      });
+    }
+  }
+  positions.sort(() => Math.random() - 0.5);
+
+  const emojis = getThemeEmojis();
+  for (let i = 0; i < n; i++) {
+    const pos   = positions[i];
+    const emoji = emojis[i % emojis.length];
+    const el    = document.createElement('div');
+    el.classList.add('division-icon');
+    el.textContent            = emoji;
+    el.style.left             = `${pos.x}px`;
+    el.style.top              = `${pos.y}px`;
+    el.style.animationDelay   = `${i * 18}ms`;
+    field.appendChild(el);
+    divIcons.push({ id: i, emoji, x: pos.x + size / 2, y: pos.y + size / 2, el, groupId: null });
+  }
+}
+
+// ── Division: lasso setup (called once) ──
+function setupDivisionLasso() {
+  const field   = document.getElementById('division-field');
+  const lassoEl = document.getElementById('lasso-path');
+
+  function getFieldXY(clientX, clientY) {
+    const r = field.getBoundingClientRect();
+    return { x: clientX - r.left, y: clientY - r.top };
+  }
+
+  function onStart(clientX, clientY, target) {
+    if (target.closest('.fence-group')) return;
+    isDrawingLasso = true;
+    lassoPoints    = [];
+    const p = getFieldXY(clientX, clientY);
+    lassoPoints.push(p);
+    lassoEl.setAttribute('d', `M ${p.x} ${p.y}`);
+    lassoEl.style.display = 'block';
+  }
+
+  function onMove(clientX, clientY) {
+    if (!isDrawingLasso) return;
+    const p = getFieldXY(clientX, clientY);
+    lassoPoints.push(p);
+    const d = lassoPoints.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`).join(' ') + ' Z';
+    lassoEl.setAttribute('d', d);
+
+    // Highlight enclosed icons in real time
+    divIcons.forEach(icon => {
+      if (icon.groupId !== null) return;
+      const inside = pointInPolygon({ x: icon.x, y: icon.y }, lassoPoints);
+      icon.el.classList.toggle('lasso-hover', inside);
+    });
+  }
+
+  function onEnd() {
+    if (!isDrawingLasso) return;
+    isDrawingLasso = false;
+    lassoEl.style.display = 'none';
+    lassoEl.setAttribute('d', '');
+
+    divIcons.forEach(i => i.el.classList.remove('lasso-hover'));
+
+    const enclosed = divIcons.filter(icon =>
+      icon.groupId === null && pointInPolygon({ x: icon.x, y: icon.y }, lassoPoints)
+    );
+    lassoPoints = [];
+    if (enclosed.length > 0) {
+      createDivGroup(enclosed);
+    } else {
+      flashHint('Draw your lasso around some icons to make a group! 🌿');
+    }
+  }
+
+  if (isTouch) {
+    field.addEventListener('touchstart', e => {
+      if (e.target.closest('.fence-group')) return;
+      e.preventDefault();
+      const t = e.touches[0];
+      onStart(t.clientX, t.clientY, e.target);
+    }, { passive: false });
+    field.addEventListener('touchmove', e => {
+      e.preventDefault();
+      const t = e.touches[0];
+      onMove(t.clientX, t.clientY);
+    }, { passive: false });
+    field.addEventListener('touchend', () => onEnd());
+    field.addEventListener('touchcancel', () => onEnd());
+  } else {
+    field.addEventListener('mousedown', e => onStart(e.clientX, e.clientY, e.target));
+    field.addEventListener('mousemove', e => onMove(e.clientX, e.clientY));
+    field.addEventListener('mouseup',   () => onEnd());
+    field.addEventListener('mouseleave', () => { if (isDrawingLasso) onEnd(); });
+  }
+}
+
+// ── Division: point-in-polygon (ray casting) ──
+function pointInPolygon(point, polygon) {
+  if (polygon.length < 3) return false;
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i].x, yi = polygon[i].y;
+    const xj = polygon[j].x, yj = polygon[j].y;
+    if (((yi > point.y) !== (yj > point.y)) &&
+        (point.x < (xj - xi) * (point.y - yi) / (yj - yi) + xi)) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+// ── Division: create a fence group ──
+function createDivGroup(icons) {
+  const groupId = divNextGid++;
+  icons.forEach(icon => { icon.groupId = groupId; });
+
+  const pad  = 18;
+  const size = 40;
+  const xs   = icons.map(i => i.x);
+  const ys   = icons.map(i => i.y);
+  const x1   = Math.min(...xs) - size / 2 - pad;
+  const y1   = Math.min(...ys) - size / 2 - pad;
+  const x2   = Math.max(...xs) + size / 2 + pad;
+  const y2   = Math.max(...ys) + size / 2 + pad;
+
+  const fence = document.createElement('div');
+  fence.classList.add('fence-group');
+  fence.dataset.groupId = groupId;
+  fence.style.left   = `${x1}px`;
+  fence.style.top    = `${y1}px`;
+  fence.style.width  = `${x2 - x1}px`;
+  fence.style.height = `${y2 - y1}px`;
+
+  const label = document.createElement('div');
+  label.classList.add('fence-label');
+  label.textContent = icons.length;
+  fence.appendChild(label);
+
+  const breakBtn = document.createElement('button');
+  breakBtn.classList.add('fence-break-btn');
+  breakBtn.textContent = '✕';
+  breakBtn.title = 'Break this group';
+  breakBtn.addEventListener('click', e => { e.stopPropagation(); breakDivGroup(groupId); });
+  fence.appendChild(breakBtn);
+
+  document.getElementById('division-field').appendChild(fence);
+  divGroups.push({ id: groupId, iconIds: icons.map(i => i.id), el: fence });
+
+  updateDivisionProgress();
+}
+
+// ── Division: break a fence group ──
+function breakDivGroup(groupId) {
+  const group = divGroups.find(g => g.id === groupId);
+  if (!group) return;
+  group.el.remove();
+  divGroups = divGroups.filter(g => g.id !== groupId);
+  divIcons.forEach(icon => { if (icon.groupId === groupId) icon.groupId = null; });
+  updateDivisionProgress();
+}
+
+// ── Division: clear all fences ──
+document.getElementById('clear-fences-btn').addEventListener('click', () => {
+  [...divGroups].forEach(g => breakDivGroup(g.id));
+});
+
+// ── Division: update progress label and sidebar ──
+function updateDivisionProgress() {
+  const found = confirmedDivs.length;
+  const total = allFactorPairs.length;
+  progressLabel.textContent = `${found} of ${total} way${total !== 1 ? 's' : ''} found`;
+
+  // Update sidebar group status
+  discoveredList.innerHTML = '';
+  const fenced   = divIcons.filter(i => i.groupId !== null).length;
+  const unfenced = currentProduct - fenced;
+
+  if (divGroups.length > 0) {
+    const statusEl = document.createElement('div');
+    statusEl.classList.add('div-status-card');
+    const groupSizes = divGroups.map(g => g.iconIds.length);
+    const allSame    = groupSizes.every(s => s === groupSizes[0]);
+    const groupSize  = groupSizes[0];
+    statusEl.innerHTML = `
+      <div class="div-status-row"><span class="div-status-num">${divGroups.length}</span> group${divGroups.length !== 1 ? 's' : ''} formed</div>
+      <div class="div-status-row">${allSame ? `<span class="div-status-num">${groupSize}</span> per group` : '<span class="div-status-warn">⚠ unequal sizes</span>'}</div>
+      <div class="div-status-row"><span class="div-status-num">${unfenced}</span> icon${unfenced !== 1 ? 's' : ''} left to group</div>
+    `;
+    discoveredList.appendChild(statusEl);
+  }
+
+  confirmedDivs.forEach(({ divisor, quotient }) => {
+    const wrapper  = document.createElement('div');
+    wrapper.classList.add('discovered-item-wrapper');
+    const item = document.createElement('div');
+    item.classList.add('discovered-item', 'div-confirmed-item');
+    item.textContent = `${currentProduct} ÷ ${divisor} = ${quotient}`;
+    wrapper.appendChild(item);
+
+    // Flip button if reverse not yet found
+    if (!alreadyConfirmedDiv(quotient, divisor) && divisor !== quotient) {
+      const flipBtn = document.createElement('button');
+      flipBtn.classList.add('flip-btn');
+      flipBtn.textContent = `↔ Also ${currentProduct} ÷ ${quotient} = ${divisor}`;
+      flipBtn.addEventListener('click', () => {
+        confirmedDivs.push({ divisor: quotient, quotient: divisor });
+        flipBtn.remove();
+        const flipped = document.createElement('div');
+        flipped.classList.add('discovered-item', 'flipped-item');
+        flipped.textContent = `${currentProduct} ÷ ${quotient} = ${divisor} ↔`;
+        wrapper.appendChild(flipped);
+        updateDivisionProgress();
+        flashHint(`Nice! If ${currentProduct} ÷ ${divisor} = ${quotient}, then ${currentProduct} ÷ ${quotient} = ${divisor} too! ↔`);
+        const remaining = allFactorPairs.filter(p => !alreadyConfirmedDiv(p.rows, p.cols));
+        if (remaining.length === 0) setTimeout(triggerDivisionCelebration, 800);
+      });
+      wrapper.appendChild(flipBtn);
+    }
+
+    discoveredList.appendChild(wrapper);
+  });
+}
+
+// ── Division: validate and confirm a grouping ──
+document.getElementById('check-groups-btn').addEventListener('click', () => {
+  const ungrouped = divIcons.filter(i => i.groupId === null);
+  if (ungrouped.length > 0) {
+    flashHint(`${ungrouped.length} icon${ungrouped.length !== 1 ? 's' : ''} still need a group — keep going! 🌿`);
+    shakeField();
+    return;
+  }
+
+  const groupSizes = divGroups.map(g => g.iconIds.length);
+  const allSame    = groupSizes.every(s => s === groupSizes[0]);
+  if (!allSame) {
+    flashHint(`Your groups have different sizes — they need to be equal! 🌿`);
+    shakeField();
+    return;
+  }
+
+  const divisor  = groupSizes[0];
+  const quotient = divGroups.length;
+
+  if (divisor === 0 || divisor * quotient !== currentProduct) {
+    flashHint(`Something's off — check that your groups cover all ${currentProduct} icons! 🌿`);
+    shakeField();
+    return;
+  }
+
+  if (alreadyConfirmedDiv(divisor, quotient)) {
+    flashHint(`You already found ${currentProduct} ÷ ${divisor} = ${quotient}! Try a different group size. ✨`);
+    shakeField();
+    return;
+  }
+
+  // Valid! Confirm it.
+  confirmedDivs.push({ divisor, quotient });
+  flashHint(`${quotient} equal group${quotient !== 1 ? 's' : ''} of ${divisor} — that's ${currentProduct} ÷ ${divisor} = ${quotient} ✓`);
+
+  // Flash fences green then reset field
+  divGroups.forEach(g => g.el.classList.add('fence-confirmed'));
+  setTimeout(() => {
+    divGroups     = [];
+    divIcons      = [];
+    const field   = document.getElementById('division-field');
+    [...field.children].forEach(c => { if (c.id !== 'lasso-svg') c.remove(); });
+    updateDivisionProgress();
+    const remaining = allFactorPairs.filter(p => !alreadyConfirmedDiv(p.rows, p.cols));
+    if (remaining.length === 0) {
+      setTimeout(triggerDivisionCelebration, 400);
+    } else {
+      requestAnimationFrame(() => scatterDivisionIcons());
+    }
+  }, 900);
+});
+
+// ── Division: freebie — add divisors of 1 and n ──
+document.getElementById('div-freebie-btn').addEventListener('click', () => {
+  if (!alreadyConfirmedDiv(currentProduct, 1)) confirmedDivs.push({ divisor: currentProduct, quotient: 1 });
+  if (!alreadyConfirmedDiv(1, currentProduct)) confirmedDivs.push({ divisor: 1, quotient: currentProduct });
+  updateDivisionProgress();
+  flashHint(`Added the easy ones: 1 group of ${currentProduct}, and ${currentProduct} groups of 1! ✨`);
+  const remaining = allFactorPairs.filter(p => !alreadyConfirmedDiv(p.rows, p.cols));
+  if (remaining.length === 0) setTimeout(triggerDivisionCelebration, 800);
+});
+
+// ── Division: hint ──
+document.getElementById('div-hint-btn').addEventListener('click', () => {
+  const remaining = allFactorPairs.filter(p => !alreadyConfirmedDiv(p.rows, p.cols));
+  if (remaining.length === 0) {
+    flashHint('You found them all! 🎉');
+    return;
+  }
+  const next = remaining.find(p => p.rows !== 1 && p.cols !== 1) || remaining[0];
+  flashHint(`Try making ${next.cols} equal group${next.cols !== 1 ? 's' : ''} of ${next.rows} 🌿`);
+});
+
+// ── Division: shake field ──
+function shakeField() {
+  const field = document.getElementById('division-field');
+  field.classList.add('shake');
+  setTimeout(() => field.classList.remove('shake'), 500);
+}
+
+// ── Division: celebration ──
+function triggerDivisionCelebration() {
+  correctScore++;
+  scoreEl.textContent = `✦ ${correctScore} correct`;
+
+  const icons = getThemeEmojis();
+  celebrationIcons.textContent = icons.slice(0, 4).join(' ');
+
+  const prime  = isPrime(currentProduct);
+  const square = isPerfectSquare(currentProduct);
+  const total  = allFactorPairs.length;
+
+  const titles = ['Amazing!', 'Brilliant!', 'You did it!', 'Spectacular!'];
+  celebrationTitle.textContent = titles[Math.floor(Math.random() * titles.length)];
+
+  if (prime) {
+    celebrationMsg.textContent   = `${currentProduct} is a prime number — it can only be divided into 1 group of ${currentProduct}, or ${currentProduct} groups of 1!`;
+    celebrationExtra.textContent = `🔢 In math, we say ${currentProduct} is prime because its only divisors are 1 and itself.`;
+    celebrationExtra.classList.remove('hidden');
+  } else if (square) {
+    celebrationMsg.textContent   = `You found all ${total} ways to divide ${currentProduct} into equal groups!`;
+    celebrationExtra.textContent = `⬛ ${currentProduct} is a perfect square — ${Math.sqrt(currentProduct)} groups of ${Math.sqrt(currentProduct)} makes a square!`;
+    celebrationExtra.classList.remove('hidden');
+  } else {
+    celebrationMsg.textContent = `You found all ${total} ways to divide ${currentProduct} into equal groups!`;
+    celebrationExtra.textContent = `🌿 The number ${currentProduct} has ${total} divisors. Mathematicians call ${currentProduct} the dividend and each group size a divisor.`;
+    celebrationExtra.classList.remove('hidden');
+  }
+
+  celebrationScreen.classList.remove('hidden');
+}

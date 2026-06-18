@@ -579,3 +579,198 @@
   white-space: nowrap;
   animation: fade-out 0.4s ease 2.1s forwards;
 }
+
+/* ════════════════════════════════
+   DIVISION MODE
+   ════════════════════════════════ */
+
+/* Mode display toggle */
+.mode-display {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Division field container */
+.division-field-container {
+  flex: 1;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 2px solid rgba(255,255,255,0.1);
+  min-width: 0;
+}
+
+/* The open meadow */
+.division-field {
+  width: 100%;
+  height: 100%;
+  background: #eef5e8;
+  background-image:
+    radial-gradient(ellipse at 15% 85%, rgba(122, 158, 126, 0.2) 0%, transparent 45%),
+    radial-gradient(ellipse at 85% 15%, rgba(122, 158, 126, 0.12) 0%, transparent 40%),
+    radial-gradient(ellipse at 50% 50%, rgba(253, 248, 242, 0.5) 0%, transparent 70%);
+  position: relative;
+  cursor: crosshair;
+  user-select: none;
+  -webkit-user-select: none;
+  overflow: hidden;
+}
+
+/* Icons scattered on the field */
+.division-icon {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  user-select: none;
+  border-radius: 8px;
+  z-index: 3;
+  pointer-events: none;
+  animation: scatter-in 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+  transition: background 0.15s;
+}
+
+.division-icon.lasso-hover {
+  background: rgba(155, 127, 212, 0.25);
+  border-radius: 8px;
+}
+
+@keyframes scatter-in {
+  from { transform: scale(0) rotate(-20deg); opacity: 0; }
+  to   { transform: scale(1) rotate(0deg);   opacity: 1; }
+}
+
+/* Lasso SVG overlay */
+.lasso-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 8;
+}
+
+.lasso-path {
+  fill: rgba(155, 127, 212, 0.1);
+  stroke: var(--purple-mid);
+  stroke-width: 2.5;
+  stroke-dasharray: 7 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Fence groups */
+.fence-group {
+  position: absolute;
+  border: 3px dashed var(--accent-gold);
+  border-radius: 16px;
+  background: rgba(201, 168, 76, 0.1);
+  z-index: 6;
+  animation: fence-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: background 0.2s;
+}
+
+.fence-group:hover {
+  background: rgba(201, 168, 76, 0.18);
+}
+
+.fence-group.fence-confirmed {
+  border-color: var(--accent-green);
+  background: rgba(122, 158, 126, 0.22);
+  border-style: solid;
+  animation: fence-confirm 0.4s ease;
+}
+
+@keyframes fence-in {
+  from { transform: scale(0.88); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+
+@keyframes fence-confirm {
+  0%   { transform: scale(1);    }
+  40%  { transform: scale(1.04); }
+  100% { transform: scale(1);    }
+}
+
+/* Icon count badge on fence */
+.fence-label {
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  background: var(--accent-gold);
+  color: var(--purple-deep);
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  border-radius: 20px;
+  pointer-events: none;
+  z-index: 7;
+}
+
+/* Break button on fence */
+.fence-break-btn {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  background: rgba(93, 60, 143, 0.75);
+  color: var(--cream);
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 0.6rem;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.fence-break-btn:hover {
+  background: var(--purple-mid);
+}
+
+/* Division sidebar status card */
+.div-status-card {
+  background: rgba(255,255,255,0.07);
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.div-status-row {
+  font-size: 0.8rem;
+  color: var(--purple-light);
+  font-weight: 600;
+}
+
+.div-status-num {
+  color: var(--cream);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.div-status-warn {
+  color: #e07a5f;
+  font-size: 0.78rem;
+}
+
+/* Confirmed division item */
+.div-confirmed-item {
+  border-left-color: var(--accent-green);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  letter-spacing: 0.02em;
+}

@@ -71,26 +71,57 @@
         <!-- PROBLEM DISPLAY -->
         <div class="problem-banner">
           <div class="problem-banner-inner">
-            <span class="problem-label">Find all rectangles for</span>
-            <span class="product-display" id="product-display">12</span>
+
+            <!-- Multiplication display -->
+            <div class="mode-display" id="mult-display">
+              <span class="problem-label">Find all rectangles for</span>
+              <span class="product-display" id="product-display">12</span>
+            </div>
+
+            <!-- Division display -->
+            <div class="mode-display hidden" id="div-display">
+              <span class="problem-label">How can</span>
+              <span class="product-display" id="div-dividend-el">24</span>
+              <span class="problem-label">be divided into equal groups?</span>
+            </div>
+
           </div>
           <div class="problem-progress" id="progress-label"></div>
           <div class="problem-hint" id="problem-hint"></div>
         </div>
 
-        <!-- CANVAS ROW -->
-        <div class="canvas-row">
+        <!-- CANVAS ROW — Multiplication -->
+        <div class="canvas-row" id="mult-canvas-row">
           <!-- holding area injected here by JS -->
           <div class="canvas-container">
             <div class="graph-paper" id="graph-paper"></div>
           </div>
         </div>
 
-        <!-- ACTION BUTTONS -->
-        <div class="action-bar">
+        <!-- CANVAS ROW — Division -->
+        <div class="canvas-row hidden" id="div-canvas-row">
+          <div class="division-field-container">
+            <div class="division-field" id="division-field">
+              <svg class="lasso-svg" id="lasso-svg" xmlns="http://www.w3.org/2000/svg">
+                <path id="lasso-path" class="lasso-path" d=""/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- ACTION BUTTONS — Multiplication -->
+        <div class="action-bar" id="mult-action-bar">
           <button class="secondary-btn" id="hint-btn">Need a hint? 🌿</button>
           <button class="freebie-btn" id="freebie-btn">✨ Add 1×n and n×1</button>
           <button class="primary-btn" id="check-grid-btn">That's a rectangle! ✓</button>
+        </div>
+
+        <!-- ACTION BUTTONS — Division -->
+        <div class="action-bar hidden" id="div-action-bar">
+          <button class="secondary-btn" id="div-hint-btn">Need a hint? 🌿</button>
+          <button class="freebie-btn" id="div-freebie-btn">✨ Add 1-group and n-groups</button>
+          <button class="secondary-btn" id="clear-fences-btn">💨 Clear fences</button>
+          <button class="primary-btn" id="check-groups-btn">Equal groups! ✓</button>
         </div>
 
       </div>
@@ -104,7 +135,7 @@
         </div>
 
         <div class="discovered-section">
-          <div class="discovered-label">Rectangles found</div>
+          <div class="discovered-label" id="discovered-label">Rectangles found</div>
           <div class="discovered-list" id="discovered-list"></div>
         </div>
 
