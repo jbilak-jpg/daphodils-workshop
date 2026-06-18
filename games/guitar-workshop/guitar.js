@@ -60,19 +60,20 @@ function arrowContent(state) {
 }
 
 // ── App state ──
-var bpm      = 80;
-var measures = [newMeasure(), newMeasure()];
-var playing  = false;
+var bpm            = 80;
+var measures       = [newMeasure(), newMeasure()];
+var playing        = false;
+var visualOffsetMs = 0; // positive = visual fires later (compensates for output latency)
 
 // Audio
-var audioCtx          = null;
-var masterGain        = null;
-var downBuf           = null;
-var upBuf             = null;
-var schedTimer        = null;
-var nextTime          = 0;
-var schedBeat         = 0;
-var pendingVisual     = []; // setTimeout IDs for beat-highlight updates
+var audioCtx      = null;
+var masterGain    = null;
+var downBuf       = null;
+var upBuf         = null;
+var schedTimer    = null;
+var nextTime      = 0;
+var schedBeat     = 0;
+var pendingVisual = []; // setTimeout IDs for beat-highlight updates
 
 var downArr = null;
 var upArr   = null;
@@ -233,6 +234,13 @@ async function initAudio() {
   masterGain.connect(audioCtx.destination);
   if (downArr) downBuf = await audioCtx.decodeAudioData(downArr.slice(0));
   if (upArr)   upBuf   = await audioCtx.decodeAudioData(upArr.slice(0));
+
+  // iOS warmup: play a silent buffer to initialize the audio hardware pipeline
+  // so the first real note doesn't arrive late
+  var warmup = audioCtx.createBufferSource();
+  warmup.buffer = audioCtx.createBuffer(1, 1, audioCtx.sampleRate);
+  warmup.connect(audioCtx.destination);
+  warmup.start(audioCtx.currentTime);
 }
 
 function playNote(buf, time) {
@@ -270,9 +278,9 @@ function scheduler() {
     if      (s === 'down') playNote(downBuf, nextTime);
     else if (s === 'up')   playNote(upBuf,   nextTime);
 
-    // Schedule the visual highlight to fire at the same moment the audio plays
+    // Schedule the visual highlight; visualOffsetMs lets user dial out device latency
     (function(m, b, t) {
-      var delayMs = Math.max(0, (t - audioCtx.currentTime) * 1000);
+      var delayMs = Math.max(0, (t - audioCtx.currentTime) * 1000 - visualOffsetMs);
       var tid = setTimeout(function() {
         if (!playing) return;
         highlightBeat(m, b);
@@ -316,6 +324,12 @@ function stopPlay() {
   document.getElementById('play-btn').classList.remove('is-playing');
 }
 
+// ── Sync offset ──
+function setSync(v) {
+  visualOffsetMs = Math.max(-500, Math.min(500, v));
+  document.getElementById('sync-val').textContent = visualOffsetMs;
+}
+
 // ── BPM — stop/restart on change so audio & visual stay in sync ──
 function setBPM(v) {
   var was = playing;
@@ -333,6 +347,8 @@ document.getElementById('bpm-up').addEventListener('click', function() { setBPM(
 document.getElementById('bpm-dn').addEventListener('click', function() { setBPM(bpm - 5); });
 document.getElementById('add-btn').addEventListener('click', addMeasure);
 document.getElementById('rem-btn').addEventListener('click', removeMeasure);
+document.getElementById('sync-up').addEventListener('click', function() { setSync(visualOffsetMs + 25); });
+document.getElementById('sync-dn').addEventListener('click', function() { setSync(visualOffsetMs - 25); });
 
 // ── Init ──
 renderLegend();
