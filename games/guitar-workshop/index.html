@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Guitar Workshop — Daphodil's Workshop</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../style/global.css" />
+  <link rel="stylesheet" href="guitar.css" />
+</head>
+<body>
+
+  <div class="app-wrapper">
+
+    <!-- NAV -->
+    <nav class="top-nav">
+      <a href="../../index.html" class="nav-home">← Daphodil's Workshop</a>
+      <div class="nav-center">
+        <span class="nav-title">🎸 Guitar Workshop</span>
+      </div>
+      <div class="bpm-row">
+        <button class="bpm-btn" id="bpm-dn">−</button>
+        <div class="bpm-readout">
+          <span class="bpm-num" id="bpm-val">80</span>
+          <span class="bpm-lbl">BPM</span>
+        </div>
+        <button class="bpm-btn" id="bpm-up">+</button>
+      </div>
+    </nav>
+
+    <!-- LEGEND -->
+    <div class="legend-strip">
+      <span class="legend-text">Tap to cycle:</span>
+      <div class="legend-steps">
+        <div class="leg-step">
+          <div class="leg-icon"><div class="leg-empty-dot"></div></div>
+          <span>skip</span>
+        </div>
+        <span class="leg-arrow">→</span>
+        <div class="leg-step">
+          <div class="leg-icon" id="leg-down"></div>
+          <span>down</span>
+        </div>
+        <span class="leg-arrow">→</span>
+        <div class="leg-step">
+          <div class="leg-icon" id="leg-up"></div>
+          <span>up</span>
+        </div>
+        <span class="leg-arrow">→</span>
+        <div class="leg-step">
+          <div class="leg-icon" id="leg-ghost-down"></div>
+          <span>air ↓</span>
+        </div>
+        <span class="leg-arrow">→</span>
+        <div class="leg-step">
+          <div class="leg-icon" id="leg-ghost-up"></div>
+          <span>air ↑</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHEET AREA -->
+    <div class="sheet-area">
+      <div class="sheet" id="sheet"></div>
+    </div>
+
+    <!-- ACTION BAR -->
+    <div class="action-bar">
+      <button class="play-btn" id="play-btn" disabled>Loading…</button>
+      <button class="ctrl-btn" id="add-btn">+ Measure</button>
+      <button class="ctrl-btn" id="rem-btn">− Measure</button>
+    </div>
+
+  </div>
+
+  <script src="guitar.js"></script>
+</body>
+</html>
