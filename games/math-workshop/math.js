@@ -759,41 +759,22 @@ function setupDivisionLasso() {
     return { x: clientX - r.left, y: clientY - r.top };
   }
 
-  function onStart(clientX, clientY, target) {
-    if (target.closest('.fence-group')) return;
-    isDrawingLasso = true;
-    lassoPoints    = [];
-    const p = getFieldXY(clientX, clientY);
-    lassoPoints.push(p);
-    lassoEl.setAttribute('d', `M ${p.x} ${p.y}`);
-    lassoEl.style.display = 'block';
-  }
-
-  function onMove(clientX, clientY) {
-    if (!isDrawingLasso) return;
-    const p = getFieldXY(clientX, clientY);
-    lassoPoints.push(p);
+  function updatePath() {
     const d = lassoPoints.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`).join(' ') + ' Z';
     lassoEl.setAttribute('d', d);
-
-    // Highlight enclosed icons in real time
     divIcons.forEach(icon => {
       if (icon.groupId !== null) return;
-      const inside = pointInPolygon({ x: icon.x, y: icon.y }, lassoPoints);
-      icon.el.classList.toggle('lasso-hover', inside);
+      icon.el.classList.toggle('lasso-hover', pointInPolygon({ x: icon.x, y: icon.y }, lassoPoints));
     });
   }
 
-  function onEnd() {
-    if (!isDrawingLasso) return;
+  function finishLasso() {
     isDrawingLasso = false;
     lassoEl.style.display = 'none';
     lassoEl.setAttribute('d', '');
-
     divIcons.forEach(i => i.el.classList.remove('lasso-hover'));
-
-    const enclosed = divIcons.filter(icon =>
-      icon.groupId === null && pointInPolygon({ x: icon.x, y: icon.y }, lassoPoints)
+    const enclosed = divIcons.filter(i =>
+      i.groupId === null && pointInPolygon({ x: i.x, y: i.y }, lassoPoints)
     );
     lassoPoints = [];
     if (enclosed.length > 0) {
@@ -803,26 +784,54 @@ function setupDivisionLasso() {
     }
   }
 
-  if (isTouch) {
-    field.addEventListener('touchstart', e => {
-      if (e.target.closest('.fence-group')) return;
-      e.preventDefault();
-      const t = e.touches[0];
-      onStart(t.clientX, t.clientY, e.target);
-    }, { passive: false });
-    field.addEventListener('touchmove', e => {
-      e.preventDefault();
-      const t = e.touches[0];
-      onMove(t.clientX, t.clientY);
-    }, { passive: false });
-    field.addEventListener('touchend', () => onEnd());
-    field.addEventListener('touchcancel', () => onEnd());
-  } else {
-    field.addEventListener('mousedown', e => onStart(e.clientX, e.clientY, e.target));
-    field.addEventListener('mousemove', e => onMove(e.clientX, e.clientY));
-    field.addEventListener('mouseup',   () => onEnd());
-    field.addEventListener('mouseleave', () => { if (isDrawingLasso) onEnd(); });
-  }
+  // ── Mouse (desktop): document-level move/up so dragging outside the field still works ──
+  field.addEventListener('mousedown', e => {
+    if (e.target.closest('.fence-group')) return;
+    e.preventDefault();
+    isDrawingLasso = true;
+    lassoPoints    = [];
+    const p = getFieldXY(e.clientX, e.clientY);
+    lassoPoints.push(p);
+    lassoEl.setAttribute('d', `M ${p.x} ${p.y}`);
+    lassoEl.style.display = 'block';
+
+    function onMouseMove(e) {
+      if (!isDrawingLasso) return;
+      lassoPoints.push(getFieldXY(e.clientX, e.clientY));
+      updatePath();
+    }
+    function onMouseUp() {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup',   onMouseUp);
+      finishLasso();
+    }
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup',   onMouseUp);
+  });
+
+  // ── Touch (iPad): touchmove fires on the original element automatically ──
+  field.addEventListener('touchstart', e => {
+    if (e.target.closest('.fence-group')) return;
+    e.preventDefault();
+    isDrawingLasso = true;
+    lassoPoints    = [];
+    const t = e.touches[0];
+    const p = getFieldXY(t.clientX, t.clientY);
+    lassoPoints.push(p);
+    lassoEl.setAttribute('d', `M ${p.x} ${p.y}`);
+    lassoEl.style.display = 'block';
+  }, { passive: false });
+
+  field.addEventListener('touchmove', e => {
+    if (!isDrawingLasso) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    lassoPoints.push(getFieldXY(t.clientX, t.clientY));
+    updatePath();
+  }, { passive: false });
+
+  field.addEventListener('touchend',   () => { if (isDrawingLasso) finishLasso(); });
+  field.addEventListener('touchcancel', () => { if (isDrawingLasso) finishLasso(); });
 }
 
 // ── Division: point-in-polygon (ray casting) ──

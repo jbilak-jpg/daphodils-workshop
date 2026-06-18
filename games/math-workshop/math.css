@@ -656,10 +656,10 @@
 }
 
 .lasso-path {
-  fill: rgba(155, 127, 212, 0.1);
-  stroke: var(--purple-mid);
-  stroke-width: 2.5;
-  stroke-dasharray: 7 4;
+  fill: rgba(201, 168, 76, 0.1);
+  stroke: var(--accent-gold);
+  stroke-width: 3;
+  stroke-dasharray: 10 5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
