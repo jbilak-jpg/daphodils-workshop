@@ -352,6 +352,45 @@ document.getElementById('bpm-up').addEventListener('click', function() { setBPM(
 document.getElementById('bpm-dn').addEventListener('click', function() { setBPM(bpm - 5); });
 document.getElementById('add-btn').addEventListener('click', addMeasure);
 document.getElementById('rem-btn').addEventListener('click', removeMeasure);
+
+document.getElementById('save-btn').addEventListener('click', function() {
+  var data = JSON.stringify({ bpm: bpm, measures: measures }, null, 2);
+  var blob = new Blob([data], { type: 'application/json' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'strum-pattern.json';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('load-input').addEventListener('change', function(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      var data = JSON.parse(ev.target.result);
+      if (data.bpm)      setBPM(data.bpm);
+      if (data.measures) {
+        var was = playing;
+        if (was) stopPlay();
+        measures = data.measures.map(function(m) {
+          return {
+            beats:  Array.isArray(m.beats)  ? m.beats  : Array(BEATS).fill('empty'),
+            chords: Array.isArray(m.chords) ? m.chords : Array(BEATS).fill('')
+          };
+        });
+        renderSheet();
+        if (was) startPlay();
+      }
+    } catch(err) {
+      alert('Could not load that file.');
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
 document.getElementById('sync-up').addEventListener('click', function() { setSync(visualOffsetMs + 50); });
 document.getElementById('sync-dn').addEventListener('click', function() { setSync(visualOffsetMs - 50); });
 

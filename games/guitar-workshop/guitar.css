@@ -352,6 +352,11 @@
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1;
 }
 .ctrl-btn:hover { background: rgba(155,127,212,0.1); border-color: var(--purple-light); }
 .ctrl-btn:active { transform: scale(0.97); }
