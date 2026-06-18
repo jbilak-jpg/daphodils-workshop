@@ -245,7 +245,11 @@ function playNote(buf, time) {
   src.connect(g);
   g.connect(masterGain);
   src.start(time);
-  src.stop(time + 2.5);
+  // Fade out after 1.5 beats so chord doesn't bleed into ghost strums
+  var sustain = Math.min((60 / bpm) * 1.5, 1.8);
+  g.gain.setValueAtTime(0.88, time + sustain);
+  g.gain.linearRampToValueAtTime(0, time + sustain + 0.12);
+  src.stop(time + sustain + 0.13);
 }
 
 function scheduler() {
