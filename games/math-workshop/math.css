@@ -656,7 +656,7 @@
 }
 
 .lasso-path {
-  fill: rgba(201, 168, 76, 0.1);
+  fill: none;
   stroke: var(--accent-gold);
   stroke-width: 3;
   stroke-dasharray: 10 5;
