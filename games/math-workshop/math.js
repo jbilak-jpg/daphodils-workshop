@@ -694,7 +694,7 @@ function startDivisionProblem() {
 
   const field = document.getElementById('division-field');
   const svg   = document.getElementById('lasso-svg');
-  [...field.children].forEach(c => { if (c.id !== 'lasso-svg') c.remove(); });
+  [...field.children].forEach(c => { if (c.id !== 'lasso-svg' && c.id !== 'lasso-counter') c.remove(); });
   [...svg.children].forEach(c => { if (c.id !== 'lasso-path') c.remove(); });
 
   if (!divLassoSetup) {
@@ -1028,7 +1028,7 @@ document.getElementById('check-groups-btn').addEventListener('click', () => {
     divIcons      = [];
     const field   = document.getElementById('division-field');
     const svg     = document.getElementById('lasso-svg');
-    [...field.children].forEach(c => { if (c.id !== 'lasso-svg') c.remove(); });
+    [...field.children].forEach(c => { if (c.id !== 'lasso-svg' && c.id !== 'lasso-counter') c.remove(); });
     [...svg.children].forEach(c => { if (c.id !== 'lasso-path') c.remove(); });
     updateDivisionProgress();
     const remaining = allFactorPairs.filter(p => !alreadyConfirmedDiv(p.rows, p.cols));
