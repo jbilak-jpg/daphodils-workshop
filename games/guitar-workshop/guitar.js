@@ -5,29 +5,50 @@ const BEATS  = 8;
 const LABELS = ['1', '+', '2', '+', '3', '+', '4', '+'];
 const CYCLE  = ['empty', 'down', 'up', 'ghost-down', 'ghost-up'];
 
-// ── Arrow SVG factory ──
+// ── Measure factory ──
+function newMeasure() {
+  return { beats: Array(BEATS).fill('empty'), chords: Array(BEATS).fill('') };
+}
+
+// ── Arrow SVG — single path for clean black outline on solid arrows ──
 function arrowSVG(dir, ghost, w, h) {
-  w = w || 36; h = h || 76;
-  const color   = dir === 'down' ? '#c9a84c' : '#9b7fd4';
-  const opacity = ghost ? 0.22 : 1;
-  const cx  = w / 2;
-  const sw  = Math.round(w * 0.25);   // stem width
-  const hw  = Math.round(w * 0.44);   // head half-width
-  const r   = sw / 2;
+  w = w || 36; h = h || 72;
+  var color   = dir === 'down' ? '#c9a84c' : '#9b7fd4';
+  var opacity = ghost ? 0.22 : 1;
+  var cx  = w / 2;
+  var sw  = Math.round(w * 0.25);  // stem width
+  var hw  = Math.round(w * 0.45);  // head half-width
+  var d;
 
   if (dir === 'down') {
-    const sEnd = h - hw - 5;
-    return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" opacity="' + opacity + '" xmlns="http://www.w3.org/2000/svg">' +
-      '<rect x="' + (cx - sw/2) + '" y="2" width="' + sw + '" height="' + (sEnd - 2) + '" rx="' + r + '" fill="' + color + '"/>' +
-      '<polygon points="' + (cx-hw) + ',' + sEnd + ' ' + (cx+hw) + ',' + sEnd + ' ' + cx + ',' + (h-1) + '" fill="' + color + '"/>' +
-      '</svg>';
+    var sEnd = h - hw - 3;
+    d = 'M' + (cx-sw/2) + ',2'
+      + ' L' + (cx+sw/2) + ',2'
+      + ' L' + (cx+sw/2) + ',' + sEnd
+      + ' L' + (cx+hw)   + ',' + sEnd
+      + ' L' + cx         + ',' + (h-1)
+      + ' L' + (cx-hw)   + ',' + sEnd
+      + ' L' + (cx-sw/2) + ',' + sEnd
+      + ' Z';
   } else {
-    const sStart = hw + 5;
-    return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" opacity="' + opacity + '" xmlns="http://www.w3.org/2000/svg">' +
-      '<polygon points="' + (cx-hw) + ',' + sStart + ' ' + (cx+hw) + ',' + sStart + ' ' + cx + ',1" fill="' + color + '"/>' +
-      '<rect x="' + (cx - sw/2) + '" y="' + sStart + '" width="' + sw + '" height="' + (h - sStart - 2) + '" rx="' + r + '" fill="' + color + '"/>' +
-      '</svg>';
+    var sStart = hw + 3;
+    d = 'M' + cx             + ',1'
+      + ' L' + (cx+hw)       + ',' + sStart
+      + ' L' + (cx+sw/2)     + ',' + sStart
+      + ' L' + (cx+sw/2)     + ',' + (h-2)
+      + ' L' + (cx-sw/2)     + ',' + (h-2)
+      + ' L' + (cx-sw/2)     + ',' + sStart
+      + ' L' + (cx-hw)       + ',' + sStart
+      + ' Z';
   }
+
+  var stroke    = ghost ? 'none' : '#1a1a1a';
+  var strokeW   = ghost ? 0 : 1.5;
+  return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h
+    + '" opacity="' + opacity + '" xmlns="http://www.w3.org/2000/svg">'
+    + '<path d="' + d + '" fill="' + color + '" stroke="' + stroke
+    + '" stroke-width="' + strokeW + '" stroke-linejoin="round"/>'
+    + '</svg>';
 }
 
 function arrowContent(state) {
@@ -40,7 +61,7 @@ function arrowContent(state) {
 
 // ── App state ──
 var bpm      = 80;
-var measures = [Array(BEATS).fill('empty'), Array(BEATS).fill('empty')];
+var measures = [newMeasure(), newMeasure()];
 var playing  = false;
 
 // Audio
@@ -54,7 +75,6 @@ var schedBeat  = 0;
 var playStart  = 0;
 var rafId      = null;
 
-// Pre-fetched raw array buffers
 var downArr = null;
 var upArr   = null;
 
@@ -72,7 +92,7 @@ async function prefetch() {
     var btn = document.getElementById('play-btn');
     btn.disabled = false;
     btn.textContent = '▶  Play';
-    console.warn('Sound load error — will retry on play', e);
+    console.warn('Sound load error', e);
   }
 }
 
@@ -86,7 +106,7 @@ function renderLegend() {
   ];
   configs.forEach(function(c) {
     var el = document.getElementById(c[0]);
-    if (el) el.innerHTML = arrowSVG(c[1], c[2], 20, 38);
+    if (el) el.innerHTML = arrowSVG(c[1], c[2], 20, 36);
   });
 }
 
@@ -94,35 +114,66 @@ function renderLegend() {
 function renderSheet() {
   var sheet = document.getElementById('sheet');
   sheet.innerHTML = '';
+
   measures.forEach(function(m, mi) {
     var mEl = document.createElement('div');
     mEl.className = 'measure' + (mi === 0 ? ' row-start' : '');
 
-    var numEl = document.createElement('div');
+    // ── Measure header: number + copy button ──
+    var hdr = document.createElement('div');
+    hdr.className = 'm-header';
+
+    var numEl = document.createElement('span');
     numEl.className = 'm-num';
     numEl.textContent = mi + 1;
-    mEl.appendChild(numEl);
+    hdr.appendChild(numEl);
 
+    var copyBtn = document.createElement('button');
+    copyBtn.className = 'copy-btn';
+    copyBtn.textContent = '⧉';
+    copyBtn.title = 'Duplicate measure';
+    copyBtn.addEventListener('click', function(e) { e.stopPropagation(); copyMeasure(mi); });
+    hdr.appendChild(copyBtn);
+
+    mEl.appendChild(hdr);
+
+    // ── Beats row ──
     var row = document.createElement('div');
     row.className = 'beats-row';
 
-    m.forEach(function(state, bi) {
+    m.beats.forEach(function(state, bi) {
       var slot = document.createElement('div');
       slot.className = 'beat-slot ' + (bi % 2 === 0 ? 'main-beat' : 'and-beat');
       slot.dataset.mi = mi;
       slot.dataset.bi = bi;
 
+      // Chord label input (above arrow)
+      var inp = document.createElement('input');
+      inp.type = 'text';
+      inp.className = 'chord-input';
+      inp.value = m.chords[bi];
+      inp.maxLength = 5;
+      inp.autocomplete = 'off';
+      inp.setAttribute('autocorrect', 'off');
+      inp.setAttribute('spellcheck', 'false');
+      inp.addEventListener('input', function() { measures[mi].chords[bi] = inp.value; });
+      inp.addEventListener('click',    function(e) { e.stopPropagation(); });
+      inp.addEventListener('touchend', function(e) { e.stopPropagation(); }, { passive: true });
+      slot.appendChild(inp);
+
+      // Arrow area
       var area = document.createElement('div');
       area.className = 'arrow-area';
       area.innerHTML = arrowContent(state);
       slot.appendChild(area);
 
+      // Beat label
       var lbl = document.createElement('div');
       lbl.className = 'beat-lbl' + (bi % 2 === 0 ? ' lbl-main' : '');
       lbl.textContent = LABELS[bi];
       slot.appendChild(lbl);
 
-      slot.addEventListener('click', function() { cycleState(mi, bi); });
+      slot.addEventListener('click',    function() { cycleState(mi, bi); });
       slot.addEventListener('touchend', function(e) { e.preventDefault(); cycleState(mi, bi); }, { passive: false });
 
       row.appendChild(slot);
@@ -136,116 +187,30 @@ function renderSheet() {
 function updateSlot(mi, bi) {
   var slot = document.querySelector('.beat-slot[data-mi="' + mi + '"][data-bi="' + bi + '"]');
   if (!slot) return;
-  slot.querySelector('.arrow-area').innerHTML = arrowContent(measures[mi][bi]);
+  slot.querySelector('.arrow-area').innerHTML = arrowContent(measures[mi].beats[bi]);
 }
 
 function cycleState(mi, bi) {
-  var i = CYCLE.indexOf(measures[mi][bi]);
-  measures[mi][bi] = CYCLE[(i + 1) % CYCLE.length];
+  var i = CYCLE.indexOf(measures[mi].beats[bi]);
+  measures[mi].beats[bi] = CYCLE[(i + 1) % CYCLE.length];
   updateSlot(mi, bi);
 }
 
-// ── Audio ──
-async function initAudio() {
-  audioCtx   = new (window.AudioContext || window.webkitAudioContext)();
-  masterGain = audioCtx.createGain();
-  masterGain.gain.value = 1;
-  masterGain.connect(audioCtx.destination);
-
-  // Clone before decode because decodeAudioData detaches the buffer
-  var d = downArr ? downArr.slice(0) : null;
-  var u = upArr   ? upArr.slice(0)   : null;
-
-  if (d) downBuf = await audioCtx.decodeAudioData(d);
-  if (u) upBuf   = await audioCtx.decodeAudioData(u);
-}
-
-function playNote(buf, time) {
-  if (!buf || !audioCtx) return;
-  var src = audioCtx.createBufferSource();
-  src.buffer = buf;
-  var g = audioCtx.createGain();
-  g.gain.value = 0.88;
-  src.connect(g);
-  g.connect(masterGain);
-  src.start(time);
-  src.stop(time + 2.5);
-}
-
-function scheduler() {
-  var spe   = (60 / bpm) / 2;   // seconds per 8th note
-  var total = measures.length * BEATS;
-  while (nextTime < audioCtx.currentTime + 0.12) {
-    var slot = schedBeat % total;
-    var mi   = Math.floor(slot / BEATS);
-    var bi   = slot % BEATS;
-    var s    = measures[mi] && measures[mi][bi];
-    if      (s === 'down') playNote(downBuf, nextTime);
-    else if (s === 'up')   playNote(upBuf,   nextTime);
-    nextTime += spe;
-    schedBeat++;
-  }
-  schedTimer = setTimeout(scheduler, 20);
-}
-
-function playhead() {
-  if (!playing) return;
-  var spe   = (60 / bpm) / 2;
-  var total = measures.length * BEATS;
-  var elapsed = audioCtx.currentTime - playStart;
-  if (elapsed < 0) elapsed = 0;
-  var slot = Math.floor(elapsed / spe) % total;
-  var mi   = Math.floor(slot / BEATS);
-  var bi   = slot % BEATS;
-
-  document.querySelectorAll('.beat-slot.playing').forEach(function(el) {
-    el.classList.remove('playing');
-  });
-  var el = document.querySelector('.beat-slot[data-mi="' + mi + '"][data-bi="' + bi + '"]');
-  if (el) el.classList.add('playing');
-
-  rafId = requestAnimationFrame(playhead);
-}
-
-async function startPlay() {
-  if (!audioCtx) await initAudio();
-  if (audioCtx.state === 'suspended') await audioCtx.resume();
-
-  // Reset master gain in case it was faded out
-  masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
-  masterGain.gain.setValueAtTime(1, audioCtx.currentTime);
-
-  playing   = true;
-  schedBeat = 0;
-  nextTime  = audioCtx.currentTime + 0.05;
-  playStart = nextTime;
-
-  document.getElementById('play-btn').textContent = '■  Stop';
-  document.getElementById('play-btn').classList.add('is-playing');
-
-  scheduler();
-  playhead();
-}
-
-function stopPlay() {
-  playing = false;
-  clearTimeout(schedTimer);
-  cancelAnimationFrame(rafId);
-
-  if (masterGain) {
-    masterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.07);
-  }
-
-  document.querySelectorAll('.beat-slot.playing').forEach(function(el) {
-    el.classList.remove('playing');
-  });
-  document.getElementById('play-btn').textContent = '▶  Play';
-  document.getElementById('play-btn').classList.remove('is-playing');
-}
-
 // ── Measure controls ──
+function copyMeasure(mi) {
+  var src = measures[mi];
+  measures.splice(mi + 1, 0, {
+    beats:  src.beats.slice(),
+    chords: src.chords.slice()
+  });
+  var was = playing;
+  if (was) stopPlay();
+  renderSheet();
+  if (was) startPlay();
+}
+
 function addMeasure() {
-  measures.push(Array(BEATS).fill('empty'));
+  measures.push(newMeasure());
   var was = playing;
   if (was) stopPlay();
   renderSheet();
@@ -261,10 +226,102 @@ function removeMeasure() {
   if (was) startPlay();
 }
 
-// ── BPM ──
+// ── Audio ──
+async function initAudio() {
+  audioCtx   = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 1;
+  masterGain.connect(audioCtx.destination);
+  if (downArr) downBuf = await audioCtx.decodeAudioData(downArr.slice(0));
+  if (upArr)   upBuf   = await audioCtx.decodeAudioData(upArr.slice(0));
+}
+
+function playNote(buf, time) {
+  if (!buf || !audioCtx) return;
+  var src = audioCtx.createBufferSource();
+  src.buffer = buf;
+  var g = audioCtx.createGain();
+  g.gain.value = 0.88;
+  src.connect(g);
+  g.connect(masterGain);
+  src.start(time);
+  src.stop(time + 2.5);
+}
+
+function scheduler() {
+  var spe   = (60 / bpm) / 2;
+  var total = measures.length * BEATS;
+  while (nextTime < audioCtx.currentTime + 0.12) {
+    var slot = schedBeat % total;
+    var mi   = Math.floor(slot / BEATS);
+    var bi   = slot % BEATS;
+    var s    = measures[mi] && measures[mi].beats[bi];
+    if      (s === 'down') playNote(downBuf, nextTime);
+    else if (s === 'up')   playNote(upBuf,   nextTime);
+    nextTime += spe;
+    schedBeat++;
+  }
+  schedTimer = setTimeout(scheduler, 20);
+}
+
+function playhead() {
+  if (!playing) return;
+  var spe     = (60 / bpm) / 2;
+  var total   = measures.length * BEATS;
+  var elapsed = Math.max(0, audioCtx.currentTime - playStart);
+  var slot    = Math.floor(elapsed / spe) % total;
+  var mi      = Math.floor(slot / BEATS);
+  var bi      = slot % BEATS;
+
+  document.querySelectorAll('.beat-slot.playing').forEach(function(el) {
+    el.classList.remove('playing');
+  });
+  var el = document.querySelector('.beat-slot[data-mi="' + mi + '"][data-bi="' + bi + '"]');
+  if (el) el.classList.add('playing');
+
+  rafId = requestAnimationFrame(playhead);
+}
+
+async function startPlay() {
+  if (!audioCtx) await initAudio();
+  if (audioCtx.state === 'suspended') await audioCtx.resume();
+
+  masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+  masterGain.gain.setValueAtTime(1, audioCtx.currentTime);
+
+  playing   = true;
+  schedBeat = 0;
+  // Small look-ahead so audio is never late; visual anchors to the same moment
+  var startAt = audioCtx.currentTime + 0.02;
+  nextTime  = startAt;
+  playStart = startAt;
+
+  document.getElementById('play-btn').textContent = '■  Stop';
+  document.getElementById('play-btn').classList.add('is-playing');
+
+  scheduler();
+  playhead();
+}
+
+function stopPlay() {
+  playing = false;
+  clearTimeout(schedTimer);
+  cancelAnimationFrame(rafId);
+  if (masterGain) masterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.07);
+  document.querySelectorAll('.beat-slot.playing').forEach(function(el) {
+    el.classList.remove('playing');
+  });
+  document.getElementById('play-btn').textContent = '▶  Play';
+  document.getElementById('play-btn').classList.remove('is-playing');
+}
+
+// ── BPM — stop/restart on change so audio & visual stay in sync ──
 function setBPM(v) {
-  bpm = Math.max(40, Math.min(200, v));
+  var was = playing;
+  if (was) stopPlay();
+  bpm = Math.max(20, Math.min(200, v));
   document.getElementById('bpm-val').textContent = bpm;
+  if (was) startPlay();
 }
 
 // ── Event listeners ──

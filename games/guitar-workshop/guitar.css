@@ -191,15 +191,33 @@
   border-left: 1px solid rgba(45,27,78,0.18);
 }
 
+.m-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.1rem 0.35rem;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
 .m-num {
   font-family: var(--font-body);
   font-size: 0.6rem;
   font-weight: 700;
   color: rgba(45,27,78,0.3);
-  padding: 0.12rem 0.45rem;
   letter-spacing: 0.06em;
-  border-bottom: 1px solid rgba(0,0,0,0.06);
 }
+
+.copy-btn {
+  background: none;
+  border: none;
+  font-size: 0.72rem;
+  color: rgba(45,27,78,0.28);
+  cursor: pointer;
+  padding: 0 1px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+.copy-btn:hover { color: var(--purple-mid); }
 
 .beats-row { display: flex; }
 
@@ -243,8 +261,29 @@
   100% { background: rgba(201,168,76,0.18); }
 }
 
+/* ── Chord label input ── */
+.chord-input {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #2d1b4e;
+  outline: none;
+  padding: 1px 0;
+  height: 15px;
+  cursor: text;
+  -webkit-appearance: none;
+  transition: border-color 0.15s;
+}
+.beat-slot:hover .chord-input,
+.chord-input:focus { border-bottom-color: rgba(45,27,78,0.22); }
+
 .arrow-area {
-  height: 76px;
+  height: 70px;
   display: flex;
   align-items: center;
   justify-content: center;
