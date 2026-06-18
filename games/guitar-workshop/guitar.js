@@ -65,15 +65,14 @@ var measures = [newMeasure(), newMeasure()];
 var playing  = false;
 
 // Audio
-var audioCtx   = null;
-var masterGain = null;
-var downBuf    = null;
-var upBuf      = null;
-var schedTimer = null;
-var nextTime   = 0;
-var schedBeat  = 0;
-var playStart  = 0;
-var rafId      = null;
+var audioCtx          = null;
+var masterGain        = null;
+var downBuf           = null;
+var upBuf             = null;
+var schedTimer        = null;
+var nextTime          = 0;
+var schedBeat         = 0;
+var pendingVisual     = []; // setTimeout IDs for beat-highlight updates
 
 var downArr = null;
 var upArr   = null;
@@ -252,6 +251,14 @@ function playNote(buf, time) {
   src.stop(time + sustain + 0.13);
 }
 
+function highlightBeat(mi, bi) {
+  document.querySelectorAll('.beat-slot.playing').forEach(function(el) {
+    el.classList.remove('playing');
+  });
+  var el = document.querySelector('.beat-slot[data-mi="' + mi + '"][data-bi="' + bi + '"]');
+  if (el) el.classList.add('playing');
+}
+
 function scheduler() {
   var spe   = (60 / bpm) / 2;
   var total = measures.length * BEATS;
@@ -262,30 +269,21 @@ function scheduler() {
     var s    = measures[mi] && measures[mi].beats[bi];
     if      (s === 'down') playNote(downBuf, nextTime);
     else if (s === 'up')   playNote(upBuf,   nextTime);
+
+    // Schedule the visual highlight to fire at the same moment the audio plays
+    (function(m, b, t) {
+      var delayMs = Math.max(0, (t - audioCtx.currentTime) * 1000);
+      var tid = setTimeout(function() {
+        if (!playing) return;
+        highlightBeat(m, b);
+      }, delayMs);
+      pendingVisual.push(tid);
+    })(mi, bi, nextTime);
+
     nextTime += spe;
     schedBeat++;
   }
   schedTimer = setTimeout(scheduler, 20);
-}
-
-function playhead() {
-  if (!playing) return;
-  var spe     = (60 / bpm) / 2;
-  var total   = measures.length * BEATS;
-  // Subtract output latency so visual matches what the ear actually hears
-  var latency = (audioCtx.outputLatency || 0) + (audioCtx.baseLatency || 0);
-  var elapsed = Math.max(0, audioCtx.currentTime - playStart - latency);
-  var slot    = Math.floor(elapsed / spe) % total;
-  var mi      = Math.floor(slot / BEATS);
-  var bi      = slot % BEATS;
-
-  document.querySelectorAll('.beat-slot.playing').forEach(function(el) {
-    el.classList.remove('playing');
-  });
-  var el = document.querySelector('.beat-slot[data-mi="' + mi + '"][data-bi="' + bi + '"]');
-  if (el) el.classList.add('playing');
-
-  rafId = requestAnimationFrame(playhead);
 }
 
 async function startPlay() {
@@ -297,22 +295,19 @@ async function startPlay() {
 
   playing   = true;
   schedBeat = 0;
-  // Give scheduler a generous head start; visual compensates for output latency separately
-  var startAt = audioCtx.currentTime + 0.1;
-  nextTime  = startAt;
-  playStart = startAt;
+  nextTime  = audioCtx.currentTime + 0.1;
 
   document.getElementById('play-btn').textContent = '■  Stop';
   document.getElementById('play-btn').classList.add('is-playing');
 
   scheduler();
-  playhead();
 }
 
 function stopPlay() {
   playing = false;
   clearTimeout(schedTimer);
-  cancelAnimationFrame(rafId);
+  pendingVisual.forEach(clearTimeout);
+  pendingVisual = [];
   if (masterGain) masterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.07);
   document.querySelectorAll('.beat-slot.playing').forEach(function(el) {
     el.classList.remove('playing');
