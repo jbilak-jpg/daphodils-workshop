@@ -268,7 +268,9 @@ function playhead() {
   if (!playing) return;
   var spe     = (60 / bpm) / 2;
   var total   = measures.length * BEATS;
-  var elapsed = Math.max(0, audioCtx.currentTime - playStart);
+  // Subtract output latency so visual matches what the ear actually hears
+  var latency = (audioCtx.outputLatency || 0) + (audioCtx.baseLatency || 0);
+  var elapsed = Math.max(0, audioCtx.currentTime - playStart - latency);
   var slot    = Math.floor(elapsed / spe) % total;
   var mi      = Math.floor(slot / BEATS);
   var bi      = slot % BEATS;
@@ -291,8 +293,8 @@ async function startPlay() {
 
   playing   = true;
   schedBeat = 0;
-  // Small look-ahead so audio is never late; visual anchors to the same moment
-  var startAt = audioCtx.currentTime + 0.02;
+  // Give scheduler a generous head start; visual compensates for output latency separately
+  var startAt = audioCtx.currentTime + 0.1;
   nextTime  = startAt;
   playStart = startAt;
 
