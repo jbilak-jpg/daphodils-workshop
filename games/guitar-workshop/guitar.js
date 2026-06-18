@@ -241,6 +241,11 @@ async function initAudio() {
   warmup.buffer = audioCtx.createBuffer(1, 1, audioCtx.sampleRate);
   warmup.connect(audioCtx.destination);
   warmup.start(audioCtx.currentTime);
+
+  // Seed the sync offset from whatever latency info the browser exposes.
+  // outputLatency is available in Chrome/Firefox but not iOS Safari.
+  var detected = Math.round(((audioCtx.outputLatency || 0) + (audioCtx.baseLatency || 0)) * 1000);
+  if (detected > 0) setSync(detected);
 }
 
 function playNote(buf, time) {
@@ -347,8 +352,8 @@ document.getElementById('bpm-up').addEventListener('click', function() { setBPM(
 document.getElementById('bpm-dn').addEventListener('click', function() { setBPM(bpm - 5); });
 document.getElementById('add-btn').addEventListener('click', addMeasure);
 document.getElementById('rem-btn').addEventListener('click', removeMeasure);
-document.getElementById('sync-up').addEventListener('click', function() { setSync(visualOffsetMs + 25); });
-document.getElementById('sync-dn').addEventListener('click', function() { setSync(visualOffsetMs - 25); });
+document.getElementById('sync-up').addEventListener('click', function() { setSync(visualOffsetMs + 50); });
+document.getElementById('sync-dn').addEventListener('click', function() { setSync(visualOffsetMs - 50); });
 
 // ── Init ──
 renderLegend();
