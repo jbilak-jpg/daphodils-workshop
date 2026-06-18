@@ -258,6 +258,16 @@ function playNote(buf, time) {
   src.stop(time + sustain + 0.13);
 }
 
+// Keep the audio pipeline alive on empty/ghost beats so the hardware
+// buffer never drains and causes latency on the next real note.
+function keepPipelineWarm(time) {
+  if (!audioCtx) return;
+  var src = audioCtx.createBufferSource();
+  src.buffer = audioCtx.createBuffer(1, 128, audioCtx.sampleRate);
+  src.connect(audioCtx.destination);
+  src.start(time);
+}
+
 function highlightBeat(mi, bi) {
   document.querySelectorAll('.beat-slot.playing').forEach(function(el) {
     el.classList.remove('playing');
@@ -282,9 +292,11 @@ function rafLoop(now) {
     var slot = beat % total;
     var mi   = Math.floor(slot / BEATS);
     var bi   = slot % BEATS;
-    var s    = measures[mi] && measures[mi].beats[bi];
-    if      (s === 'down') playNote(downBuf, audioCtx.currentTime + 0.005);
-    else if (s === 'up')   playNote(upBuf,   audioCtx.currentTime + 0.005);
+    var s  = measures[mi] && measures[mi].beats[bi];
+    var at = audioCtx.currentTime + 0.005;
+    if      (s === 'down') playNote(downBuf, at);
+    else if (s === 'up')   playNote(upBuf,   at);
+    else                   keepPipelineWarm(at);
     highlightBeat(mi, bi);
   }
 
@@ -297,6 +309,10 @@ async function startPlay() {
 
   masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
   masterGain.gain.setValueAtTime(1, audioCtx.currentTime);
+
+  // Prime the hardware pipeline after resume so the first beat isn't late.
+  keepPipelineWarm(audioCtx.currentTime);
+  await new Promise(function(r) { setTimeout(r, 120); });
 
   playing       = true;
   lastBeatFired = -1;
