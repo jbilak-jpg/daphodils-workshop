@@ -408,3 +408,86 @@
   text-transform: uppercase;
   white-space: nowrap;
 }
+
+/* ── Print / PDF ── */
+@media print {
+  /* Page setup */
+  @page {
+    size: letter portrait;
+    margin: 0.65in 0.5in 0.65in 0.5in;
+  }
+
+  /* Hide everything except the sheet */
+  .top-nav,
+  .legend-strip,
+  .action-bar { display: none !important; }
+
+  /* Let the wrapper and sheet area flow naturally on the page */
+  .app-wrapper {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+    background-image: none !important;
+    display: block !important;
+  }
+
+  .sheet-area {
+    flex: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  /* Print header with title + BPM */
+  .sheet::before {
+    content: attr(data-print-title);
+    display: block;
+    width: 100%;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #2d1b4e;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 2px solid #2d1b4e;
+  }
+
+  /* Make the sheet wrap measures just like on screen */
+  .sheet {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    row-gap: 1rem !important;
+    align-content: flex-start !important;
+  }
+
+  /* Measures: force colors to print */
+  .measure {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    background: linear-gradient(to bottom, #fefaf4 0%, #f6efe3 100%) !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Hide the copy button in each measure header */
+  .copy-btn { display: none !important; }
+
+  /* Beat slot hover/active effects don't apply on paper */
+  .beat-slot.playing {
+    background: transparent !important;
+    animation: none !important;
+  }
+  .beat-slot.playing::before { display: none !important; }
+
+  /* Make chord inputs show their value as plain text */
+  .chord-input {
+    border: none !important;
+    background: transparent !important;
+    pointer-events: none;
+  }
+
+  /* Force SVG arrow colors to print */
+  .arrow-area svg {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

@@ -394,6 +394,13 @@ document.getElementById('load-input').addEventListener('change', function(e) {
 document.getElementById('sync-up').addEventListener('click', function() { setSync(visualOffsetMs + 50); });
 document.getElementById('sync-dn').addEventListener('click', function() { setSync(visualOffsetMs - 50); });
 
+document.getElementById('print-btn').addEventListener('click', function() {
+  var was = playing;
+  if (was) stopPlay();
+  document.getElementById('sheet').setAttribute('data-print-title', '🎸 Fun Strummin\'  —  ' + bpm + ' BPM');
+  window.print();
+});
+
 // ── Init ──
 renderLegend();
 renderSheet();
