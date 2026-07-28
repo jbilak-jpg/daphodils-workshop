@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <title>Math Flash Cards — Daphodil's Workshop</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/style/global.css"/>
+  <link rel="stylesheet" href="/games/flash-cards/flash.css"/>
+</head>
+<body>
+
+  <!-- ── MODE SELECT ── -->
+  <div class="screen" id="mode-screen">
+    <a href="../../index.html" class="top-back">← Daphodil's Workshop</a>
+    <div class="mode-hero">
+      <div id="mode-duck"></div>
+      <h1 class="mode-title">Math Flash Cards</h1>
+      <p class="mode-sub">Pick your math type, then deal!</p>
+    </div>
+    <div class="mode-grid">
+      <button class="mode-btn" data-mode="addition">
+        <span class="mode-sym">+</span>
+        <span class="mode-name">Addition</span>
+      </button>
+      <button class="mode-btn" data-mode="subtraction">
+        <span class="mode-sym">−</span>
+        <span class="mode-name">Subtraction</span>
+      </button>
+      <button class="mode-btn" data-mode="multiplication">
+        <span class="mode-sym">×</span>
+        <span class="mode-name">Multiplication</span>
+      </button>
+      <button class="mode-btn" data-mode="division">
+        <span class="mode-sym">÷</span>
+        <span class="mode-name">Division</span>
+      </button>
+    </div>
+    <button class="deal-btn" id="deal-btn" disabled>Deal 52 Cards! 🦆</button>
+  </div>
+
+  <!-- ── GAME ── -->
+  <div class="screen hidden" id="game-screen">
+    <nav class="game-nav">
+      <button class="nav-btn" id="nav-back">← New Game</button>
+      <span class="nav-progress">Card <span id="prog-num">0</span> / 52</span>
+      <span class="nav-score">✓ <span id="score-num">0</span></span>
+    </nav>
+
+    <div class="play-area">
+      <!-- Deck -->
+      <div class="deck-zone">
+        <div class="deck-stack" id="deck-stack">
+          <div class="deck-svg-wrap" id="deck-svg-wrap"></div>
+          <span class="deck-count" id="deck-count">52</span>
+        </div>
+        <p class="deck-label" id="deck-label">Tap to flip!</p>
+      </div>
+
+      <!-- Active card -->
+      <div class="card-scene" id="card-scene">
+        <div class="flash-card" id="flash-card">
+          <div class="card-face card-back-face" id="card-back"></div>
+          <div class="card-face card-front-face" id="card-front">
+            <div class="type-bar" id="type-bar"></div>
+            <div class="problem-text" id="problem-text">?</div>
+            <div class="problem-eq">= ?</div>
+            <div class="type-bar type-bar-bottom" id="type-bar-b"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Answer area -->
+    <div class="answer-area">
+      <div class="input-row">
+        <input type="number" id="answer-input" class="answer-input"
+               placeholder="?" inputmode="numeric" autocomplete="off"
+               autocorrect="off" spellcheck="false"/>
+        <button class="mic-btn" id="mic-btn" aria-label="Speak answer">🎤</button>
+        <button class="submit-btn" id="submit-btn" disabled>Submit</button>
+      </div>
+      <div class="action-row hidden" id="action-row">
+        <button class="retry-btn" id="retry-btn">↩ Retry</button>
+        <button class="next-btn"  id="next-btn">Next Card →</button>
+      </div>
+    </div>
+
+    <!-- Duck streak parade -->
+    <div class="duck-parade">
+      <div class="parade-row" id="parade-row"></div>
+      <span class="streak-txt" id="streak-txt"></span>
+    </div>
+  </div>
+
+  <!-- ── DONE ── -->
+  <div class="screen hidden" id="done-screen">
+    <div class="done-wrap">
+      <div id="done-duck"></div>
+      <h1 class="done-title">All Done! 🎉</h1>
+      <p class="done-stat">You got <strong id="done-correct">0</strong> out of 52 right!</p>
+      <p class="done-stat">Best streak: <strong id="done-streak">0</strong> 🦆</p>
+      <div class="done-parade" id="done-parade"></div>
+      <button class="deal-btn" id="play-again-btn">Play Again!</button>
+      <a href="../../index.html" class="top-back" style="margin-top:0.5rem">← Back to Workshop</a>
+    </div>
+  </div>
+
+  <script src="/games/flash-cards/flash.js"></script>
+</body>
+</html>
