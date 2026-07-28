@@ -12,32 +12,27 @@ function makeCards(modes) {
   var cards = [];
   modes.forEach(function(mode) {
     if (mode === 'addition') {
-      // a + b, a and b 1–12
-      for (var a = 1; a <= 12; a++) {
-        for (var b = a; b <= 12; b++) {
+      for (var a = 0; a <= 12; a++) {
+        for (var b = 0; b <= 12; b++) {
           cards.push({ mode: mode, a: a, b: b, answer: a + b });
-          if (cards.length >= 52) return;
         }
       }
     } else if (mode === 'subtraction') {
-      for (var a = 2; a <= 13; a++) {
-        for (var b = 1; b < a; b++) {
+      for (var a = 1; a <= 20; a++) {
+        for (var b = 0; b <= a; b++) {
           cards.push({ mode: mode, a: a, b: b, answer: a - b });
-          if (cards.length >= 52) return;
         }
       }
     } else if (mode === 'multiplication') {
       for (var a = 2; a <= 12; a++) {
         for (var b = 2; b <= 12; b++) {
           cards.push({ mode: mode, a: a, b: b, answer: a * b });
-          if (cards.length >= 52) return;
         }
       }
     } else if (mode === 'division') {
       for (var a = 2; a <= 12; a++) {
         for (var b = 2; b <= 12; b++) {
           cards.push({ mode: mode, a: a * b, b: a, answer: b });
-          if (cards.length >= 52) return;
         }
       }
     }
@@ -47,7 +42,6 @@ function makeCards(modes) {
 
 function buildDeck(modes) {
   var pool = [];
-  // If multiple modes, interleave
   var perMode = Math.ceil(52 / modes.length);
   modes.forEach(function(mode) {
     var sub = makeCards([mode]);
@@ -77,82 +71,70 @@ function problemText(card) {
   return card.a + ' ' + symFor(card.mode) + ' ' + card.b;
 }
 
-// ── Duck SVG ──
+// ── Mallard duck SVG ──
 function duckSVG(size, seed) {
   size = size || 32;
-  // Vary body/beak color slightly by seed
-  var bodies = ['#f5c842','#f0b830','#f7d050','#e8b820'];
-  var body = bodies[(seed || 0) % bodies.length];
-  var s = size;
-  var bh = Math.round(s * 0.62);
-  var hx = Math.round(s * 0.52);
-  var hy = Math.round(s * 0.28);
-  var hr = Math.round(s * 0.2);
+  var greens = ['#2d6e2d','#1e6b2e','#2a7a30','#1a5e28'];
+  var headGreen = greens[(seed || 0) % greens.length];
   return [
-    '<svg width="' + s + '" height="' + s + '" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">',
-    // body
-    '<ellipse cx="16" cy="22" rx="12" ry="8" fill="' + body + '"/>',
-    // wing
-    '<ellipse cx="10" cy="22" rx="5" ry="3.5" fill="rgba(0,0,0,0.10)" transform="rotate(-12 10 22)"/>',
-    // head
-    '<circle cx="' + hx + '" cy="' + hy + '" r="' + hr + '" fill="' + body + '"/>',
-    // eye
-    '<circle cx="' + (hx+4) + '" cy="' + (hy-2) + '" r="2.2" fill="#1a1a1a"/>',
-    '<circle cx="' + (hx+5) + '" cy="' + (hy-3) + '" r="0.75" fill="#fff"/>',
-    // beak
-    '<polygon points="' + (hx+hr-1) + ',' + hy + ' ' + (hx+hr+7) + ',' + (hy+1) + ' ' + (hx+hr-1) + ',' + (hy+4) + '" fill="#e8840a"/>',
-    // feet
-    '<line x1="13" y1="30" x2="10" y2="32" stroke="#e8840a" stroke-width="1.5" stroke-linecap="round"/>',
-    '<line x1="18" y1="30" x2="21" y2="32" stroke="#e8840a" stroke-width="1.5" stroke-linecap="round"/>',
+    '<svg width="' + size + '" height="' + size + '" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">',
+    '<ellipse cx="17" cy="24" rx="13" ry="9" fill="#8b7355"/>',
+    '<ellipse cx="13" cy="24" rx="7" ry="5" fill="#7a6348" transform="rotate(-8 13 24)"/>',
+    '<ellipse cx="17" cy="27" rx="10" ry="3.5" fill="#9e8766"/>',
+    '<ellipse cx="24" cy="22" rx="6" ry="7" fill="#8b3a1a"/>',
+    '<ellipse cx="23" cy="15" rx="4.5" ry="2.5" fill="#fff" opacity="0.9"/>',
+    '<circle cx="25" cy="11" r="7" fill="' + headGreen + '"/>',
+    '<ellipse cx="23" cy="9" rx="3" ry="1.8" fill="rgba(100,220,120,0.3)" transform="rotate(-20 23 9)"/>',
+    '<circle cx="28" cy="10" r="2.2" fill="#111"/>',
+    '<circle cx="28.8" cy="9.2" r="0.8" fill="#fff"/>',
+    '<rect x="31" y="9.5" width="5" height="3" rx="1.5" fill="#e8a020"/>',
+    '<line x1="31" y1="11" x2="36" y2="11" stroke="rgba(0,0,0,0.2)" stroke-width="0.7"/>',
+    '<path d="M6,20 Q2,16 4,12 Q6,14 5,18Z" fill="#8b7355"/>',
+    '<line x1="13" y1="33" x2="10" y2="35" stroke="#e87010" stroke-width="2" stroke-linecap="round"/>',
+    '<line x1="10" y1="35" x2="7"  y2="35" stroke="#e87010" stroke-width="1.5" stroke-linecap="round"/>',
+    '<line x1="10" y1="35" x2="10" y2="37" stroke="#e87010" stroke-width="1.5" stroke-linecap="round"/>',
+    '<line x1="20" y1="33" x2="23" y2="35" stroke="#e87010" stroke-width="2" stroke-linecap="round"/>',
+    '<line x1="23" y1="35" x2="26" y2="35" stroke="#e87010" stroke-width="1.5" stroke-linecap="round"/>',
+    '<line x1="23" y1="35" x2="23" y2="37" stroke="#e87010" stroke-width="1.5" stroke-linecap="round"/>',
     '</svg>'
   ].join('');
 }
 
-// Card back — large duck art
+// ── Card back SVG (deep teal background) ──
 function cardBackSVG() {
   return [
     '<svg width="100%" height="100%" viewBox="0 0 155 217" xmlns="http://www.w3.org/2000/svg">',
-    // Background pattern dots
+    '<rect width="155" height="217" fill="#0e4a4a"/>',
     '<pattern id="dots" patternUnits="userSpaceOnUse" width="14" height="14">',
     '<circle cx="7" cy="7" r="1.4" fill="rgba(201,168,76,0.18)"/>',
     '</pattern>',
     '<rect width="155" height="217" fill="url(#dots)"/>',
-    // Stars
-    '<text x="18" y="30" font-size="13" opacity="0.35">✦</text>',
-    '<text x="128" y="42" font-size="9" opacity="0.28">✦</text>',
-    '<text x="8" y="180" font-size="8" opacity="0.22">✦</text>',
-    '<text x="138" y="195" font-size="12" opacity="0.3">✦</text>',
-    // Gold border frame
-    '<rect x="8" y="8" width="139" height="201" rx="7" ry="7" fill="none" stroke="rgba(201,168,76,0.55)" stroke-width="1.5"/>',
-    '<rect x="12" y="12" width="131" height="193" rx="5" ry="5" fill="none" stroke="rgba(201,168,76,0.25)" stroke-width="0.8"/>',
-    // Main duck body
-    '<ellipse cx="78" cy="135" rx="52" ry="36" fill="#f5c842"/>',
-    // Wing detail
-    '<ellipse cx="52" cy="138" rx="22" ry="14" fill="rgba(0,0,0,0.1)" transform="rotate(-10 52 138)"/>',
-    // Head
-    '<circle cx="105" cy="90" r="30" fill="#f5c842"/>',
-    // Eye
-    '<circle cx="116" cy="82" r="8" fill="#1a1a1a"/>',
-    '<circle cx="119" cy="79" r="3" fill="#fff"/>',
-    '<circle cx="120" cy="78" r="1.2" fill="#aaa"/>',
-    // Cheek blush
-    '<ellipse cx="112" cy="91" rx="7" ry="4.5" fill="rgba(230,100,80,0.22)"/>',
-    // Beak
-    '<polygon points="132,90 150,95 132,104" fill="#e8840a"/>',
-    '<line x1="132" y1="97" x2="150" y2="97" stroke="rgba(0,0,0,0.15)" stroke-width="1"/>',
-    // Feet
-    '<line x1="65" y1="171" x2="52" y2="185" stroke="#e8840a" stroke-width="3.5" stroke-linecap="round"/>',
-    '<line x1="65" y1="185" x2="52" y2="185" stroke="#e8840a" stroke-width="2" stroke-linecap="round"/>',
-    '<line x1="52" y1="185" x2="46" y2="185" stroke="#e8840a" stroke-width="2" stroke-linecap="round"/>',
-    '<line x1="90" y1="171" x2="103" y2="185" stroke="#e8840a" stroke-width="3.5" stroke-linecap="round"/>',
-    '<line x1="103" y1="185" x2="110" y2="185" stroke="#e8840a" stroke-width="2" stroke-linecap="round"/>',
-    '<line x1="110" y1="185" x2="116" y2="185" stroke="#e8840a" stroke-width="2" stroke-linecap="round"/>',
-    // Hat
-    '<ellipse cx="105" cy="64" rx="33" ry="7" fill="#2d1b4e"/>',
-    '<rect x="88" y="22" width="34" height="44" rx="5" fill="#2d1b4e"/>',
-    '<rect x="90" y="28" width="10" height="24" rx="3" fill="rgba(201,168,76,0.3)"/>',
-    // Label at bottom
-    '<text x="78" y="208" text-anchor="middle" font-family="Nunito,sans-serif" font-size="9" font-weight="800" fill="rgba(201,168,76,0.6)">Daphodil\'s Workshop</text>',
+    '<text x="18"  y="30"  font-size="13" opacity="0.35" fill="#fff">✦</text>',
+    '<text x="128" y="42"  font-size="9"  opacity="0.25" fill="#fff">✦</text>',
+    '<text x="8"   y="180" font-size="8"  opacity="0.2"  fill="#fff">✦</text>',
+    '<text x="138" y="195" font-size="12" opacity="0.28" fill="#fff">✦</text>',
+    '<rect x="8"  y="8"  width="139" height="201" rx="7" fill="none" stroke="rgba(201,168,76,0.6)"  stroke-width="1.5"/>',
+    '<rect x="12" y="12" width="131" height="193" rx="5" fill="none" stroke="rgba(201,168,76,0.22)" stroke-width="0.8"/>',
+    '<ellipse cx="75" cy="148" rx="52" ry="34" fill="#8b7355"/>',
+    '<ellipse cx="52" cy="148" rx="28" ry="17" fill="#7a6348" transform="rotate(-8 52 148)"/>',
+    '<ellipse cx="75" cy="158" rx="42" ry="12" fill="#9e8766"/>',
+    '<ellipse cx="108" cy="138" rx="22" ry="28" fill="#8b3a1a"/>',
+    '<ellipse cx="105" cy="105" rx="16" ry="8" fill="#fff" opacity="0.92"/>',
+    '<circle cx="105" cy="88" r="26" fill="#2d6e2d"/>',
+    '<ellipse cx="98" cy="80" rx="11" ry="6" fill="rgba(100,220,120,0.25)" transform="rotate(-20 98 80)"/>',
+    '<circle cx="116" cy="83" r="8"   fill="#111"/>',
+    '<circle cx="118" cy="81" r="3"   fill="#fff"/>',
+    '<circle cx="119" cy="80" r="1.2" fill="#aaa"/>',
+    '<rect x="128" y="85" width="22" height="9" rx="4" fill="#e8a020"/>',
+    '<line x1="128" y1="89.5" x2="150" y2="89.5" stroke="rgba(0,0,0,0.2)" stroke-width="1.2"/>',
+    '<path d="M28,138 Q16,122 20,108 Q26,114 23,128Z" fill="#8b7355"/>',
+    '<line x1="62"  y1="182" x2="50"  y2="194" stroke="#e87010" stroke-width="4"   stroke-linecap="round"/>',
+    '<line x1="50"  y1="194" x2="38"  y2="194" stroke="#e87010" stroke-width="2.5" stroke-linecap="round"/>',
+    '<line x1="50"  y1="194" x2="50"  y2="200" stroke="#e87010" stroke-width="2.5" stroke-linecap="round"/>',
+    '<line x1="88"  y1="182" x2="100" y2="194" stroke="#e87010" stroke-width="4"   stroke-linecap="round"/>',
+    '<line x1="100" y1="194" x2="112" y2="194" stroke="#e87010" stroke-width="2.5" stroke-linecap="round"/>',
+    '<line x1="100" y1="194" x2="100" y2="200" stroke="#e87010" stroke-width="2.5" stroke-linecap="round"/>',
+    '<text x="78" y="210" text-anchor="middle" font-family="Nunito,sans-serif" font-size="9" font-weight="800" fill="rgba(201,168,76,0.65)">Daphodil\'s Workshop</text>',
     '</svg>'
   ].join('');
 }
@@ -181,7 +163,6 @@ var deckStack    = document.getElementById('deck-stack');
 var deckSvgWrap  = document.getElementById('deck-svg-wrap');
 var deckCountEl  = document.getElementById('deck-count');
 var deckLabel    = document.getElementById('deck-label');
-var cardScene    = document.getElementById('card-scene');
 var flashCard    = document.getElementById('flash-card');
 var cardBack     = document.getElementById('card-back');
 var cardFront    = document.getElementById('card-front');
@@ -227,24 +208,24 @@ function goToMode() {
 }
 
 function startGame() {
-  deck      = buildDeck(selectedModes);
-  deckIndex = 0;
-  score     = 0;
-  streak    = 0;
+  deck       = buildDeck(selectedModes);
+  deckIndex  = 0;
+  score      = 0;
+  streak     = 0;
   bestStreak = 0;
 
-  scoreNum.textContent = 0;
-  progNum.textContent  = 0;
-  paradeRow.innerHTML  = '';
+  scoreNum.textContent  = 0;
+  progNum.textContent   = 0;
+  paradeRow.innerHTML   = '';
   streakTxt.textContent = '';
-  answerInput.value    = '';
-  submitBtn.disabled   = true;
+  answerInput.value     = '';
+  answerInput.disabled  = false;
+  submitBtn.disabled    = true;
   actionRow.classList.add('hidden');
 
   cardFront.classList.remove('glow-correct', 'glow-wrong');
   flashCard.classList.remove('face-up');
 
-  // Fill deck with back art
   deckSvgWrap.innerHTML = cardBackSVG();
   updateDeckCount();
   deckStack.classList.remove('empty');
@@ -272,26 +253,24 @@ deckStack.addEventListener('touchend', function(e) {
 
 function flipCard() {
   if (deckIndex >= deck.length) return;
-  if (cardRevealed) return; // card already out, wait for next
+  if (cardRevealed) return;
 
-  var card = deck[deckIndex];
+  var card  = deck[deckIndex];
   var color = MODE_COLORS[card.mode] || '#888';
 
-  // Set front face content
   typeBar.style.background  = color;
   typeBarB.style.background = color;
   problemTxt.textContent    = problemText(card);
 
-  // Reset glow and state
   cardFront.classList.remove('glow-correct', 'glow-wrong');
   submitted    = false;
   wasCorrect   = false;
   cardRevealed = true;
-  answerInput.value = '';
-  submitBtn.disabled = true;
+  answerInput.value    = '';
+  answerInput.disabled = false;
+  submitBtn.disabled   = true;
   actionRow.classList.add('hidden');
 
-  // Flip animation
   flashCard.classList.add('face-up');
 
   deckIndex++;
@@ -319,10 +298,10 @@ function submitAnswer() {
 
   var card    = deck[deckIndex - 1];
   var correct = (val === card.answer);
-  submitted  = true;
-  wasCorrect = correct;
+  submitted   = true;
+  wasCorrect  = correct;
 
-  submitBtn.disabled = true;
+  submitBtn.disabled   = true;
   answerInput.disabled = true;
   stopListening();
 
@@ -331,11 +310,8 @@ function submitAnswer() {
     streak++;
     if (streak > bestStreak) bestStreak = streak;
     scoreNum.textContent = score;
-
     cardFront.classList.add('glow-correct');
     addParadeDuck();
-
-    // Auto-advance after 1.2 s if correct
     setTimeout(advanceCard, 1200);
   } else {
     streak = 0;
@@ -349,11 +325,11 @@ function submitAnswer() {
 retryBtn.addEventListener('click', function() {
   cardFront.classList.remove('glow-correct', 'glow-wrong');
   actionRow.classList.add('hidden');
-  submitted = false;
-  wasCorrect = false;
-  answerInput.value = '';
+  submitted            = false;
+  wasCorrect           = false;
+  answerInput.value    = '';
   answerInput.disabled = false;
-  submitBtn.disabled = true;
+  submitBtn.disabled   = true;
   answerInput.focus();
 });
 
@@ -371,12 +347,11 @@ function advanceCard() {
   wasCorrect   = false;
   cardRevealed = false;
 
-  // Flip back
   flashCard.classList.remove('face-up');
   cardFront.classList.remove('glow-correct', 'glow-wrong');
 
   if (deckIndex >= deck.length) {
-    setTimeout(showDone, 500);
+    setTimeout(showDone, 600);
   } else {
     deckLabel.textContent = 'Tap to flip!';
   }
@@ -386,7 +361,6 @@ function showDone() {
   doneCorrect.textContent = score;
   doneStreak.textContent  = bestStreak;
 
-  // Fill done parade with one duck per correct answer
   doneParade.innerHTML = '';
   for (var i = 0; i < score; i++) {
     var el = document.createElement('span');
@@ -406,14 +380,13 @@ function addParadeDuck() {
   el.innerHTML = duckSVG(30, streak);
   paradeRow.appendChild(el);
 
-  var total = paradeRow.children.length;
   if (streak > 1) {
     streakTxt.textContent = streak + ' in a row! 🔥';
   } else {
     streakTxt.textContent = '';
   }
 
-  // Cap parade at 20 ducks; remove oldest
+  var total = paradeRow.children.length;
   if (total > 20) {
     var first = paradeRow.children[0];
     first.classList.add('leaving');
@@ -446,42 +419,57 @@ micBtn.addEventListener('click', function() {
 
 function startListening() {
   if (!SpeechRecog || !cardRevealed || submitted) return;
-  recognition = new SpeechRecog();
-  recognition.lang = 'en-US';
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 5;
+  try {
+    recognition = new SpeechRecog();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 5;
 
-  recognition.onresult = function(e) {
-    var results = e.results[0];
-    var raw = null;
-    for (var i = 0; i < results.length; i++) {
-      var t = results[i].transcript.trim();
-      var n = parseSpokenNumber(t);
-      if (n !== null) { raw = n; break; }
-    }
-    if (raw !== null) {
-      answerInput.value = raw;
-      submitBtn.disabled = false;
-    }
+    recognition.onresult = function(e) {
+      try {
+        var results = e.results[0];
+        var raw = null;
+        for (var i = 0; i < results.length; i++) {
+          var t = results[i].transcript.trim();
+          var n = parseSpokenNumber(t);
+          if (n !== null) { raw = n; break; }
+        }
+        if (raw !== null) {
+          answerInput.value  = raw;
+          submitBtn.disabled = false;
+        }
+      } catch(err) {}
+      stopListening();
+    };
+
+    recognition.onerror = function() { stopListening(); };
+    recognition.onend   = function() {
+      listening = false;
+      micBtn.classList.remove('listening');
+      recognition = null;
+    };
+
+    recognition.start();
+    listening = true;
+    micBtn.classList.add('listening');
+
+    // Auto-stop after 6 seconds if nothing heard
+    setTimeout(function() { if (listening) stopListening(); }, 6000);
+  } catch(err) {
     stopListening();
-  };
-
-  recognition.onerror = function() { stopListening(); };
-  recognition.onend   = function() { listening = false; micBtn.classList.remove('listening'); };
-
-  recognition.start();
-  listening = true;
-  micBtn.classList.add('listening');
+  }
 }
 
 function stopListening() {
-  if (recognition) { try { recognition.stop(); } catch(e){} recognition = null; }
+  if (recognition) {
+    try { recognition.stop(); } catch(e) {}
+    recognition = null;
+  }
   listening = false;
   micBtn.classList.remove('listening');
 }
 
 function parseSpokenNumber(text) {
-  // Handle simple spoken numbers: "twelve", "forty two", "7", etc.
   var map = {
     zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,
     ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,
@@ -489,14 +477,11 @@ function parseSpokenNumber(text) {
     fifty:50,sixty:60,seventy:70,eighty:80,ninety:90,hundred:100
   };
   text = text.toLowerCase().replace(/[^a-z0-9 ]/g, '');
-  // Try direct integer first
   var direct = parseInt(text, 10);
   if (!isNaN(direct)) return direct;
   var words = text.split(/\s+/);
   var total = 0;
-  words.forEach(function(w) {
-    if (map[w] !== undefined) total += map[w];
-  });
+  words.forEach(function(w) { if (map[w] !== undefined) total += map[w]; });
   return total > 0 ? total : null;
 }
 
@@ -509,11 +494,9 @@ function showScreen(el) {
 }
 
 // ── Init ──
-// Render card backs in deck on load
 deckSvgWrap.innerHTML = cardBackSVG();
 cardBack.innerHTML    = cardBackSVG();
 
-// Also render mode duck
 var modeDuck = document.getElementById('mode-duck');
 if (modeDuck) modeDuck.innerHTML = duckSVG(56, 0);
 var doneDuck = document.getElementById('done-duck');
